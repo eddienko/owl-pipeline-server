@@ -143,6 +143,7 @@ def kube_create_job_object(
     container_name=None,
     env_vars=None,
     extraConfig=None,
+    service_account_name=None,
 ):
     """
     Create a k8 Job Object
@@ -215,6 +216,7 @@ def kube_create_job_object(
         restart_policy="Never",
         termination_grace_period_seconds=30,
         volumes=volumes,
+        service_account_name=service_account_name,
     )
 
     # And finaly we can create our V1JobSpec!
@@ -231,6 +233,7 @@ async def kube_create_job(
     namespace=None,
     extraConfig=None,
     env_vars=None,
+    service_account_name=None,
 ):
     namespace = namespace or "default"
     # Create the job definition
@@ -241,6 +244,7 @@ async def kube_create_job(
         namespace=namespace,
         command=command or "sleep 60",
         extraConfig=extraConfig or {},
+        service_account_name=service_account_name,
     )
 
     config.load_incluster_config()

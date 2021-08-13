@@ -12,6 +12,8 @@ from pydantic import BaseModel
 from .. import database as db
 from ..crypto import PBKDF2PasswordHasher, get_random_string
 
+OWL_USERNAME = "owl"
+
 database = databases.Database(config.dbi)
 
 
@@ -94,10 +96,14 @@ async def startup():
     await database.connect()
     token = config.token
     try:
-        q = db.Token.insert().values(username="owl", token=token)
+        q = db.Token.insert().values(username=OWL_USERNAME, token=token)
         await database.execute(q)
     except sqlite3.IntegrityError:
-        q = db.Token.update().where(db.Token.c.username == "owl").values(token=token)
+        q = (
+            db.Token.update()
+            .where(db.Token.c.username == OWL_USERNAME)
+            .values(token=token)
+        )
         await database.execute(q)
 
 
@@ -134,7 +140,7 @@ async def pipeline_list(status: str, authentication=Header(None), username=None)
 
 @app.get("/api/pipeline/status/{uid}")
 @authenticate()
-async def pipeline_status(uid: int, authentication=Header(None), username=None):
+async def pipeline_status_get(uid: int, authentication=Header(None), username=None):
     q = db.Pipeline.select().where(db.Pipeline.c.id == uid)
     res = await database.fetch_one(q)
     return res
@@ -180,11 +186,13 @@ async def pipeline_update(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail=f"Pipeline {uid} not found",
         )
+    if username not in [OWL_USERNAME, res.user]:
+        await check_admin(username)
     if res.status not in ["TO_CANCEL"]:
         q = db.Pipeline.update().where(db.Pipeline.c.id == uid).values(status=new)
         await database.execute(q)
 
-    return {"id": uid, "status": new}
+    return {"id": uid, "status": new, "user": res.user}
 
 
 @app.post("/api/auth/login")

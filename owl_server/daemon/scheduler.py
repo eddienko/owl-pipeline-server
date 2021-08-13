@@ -303,7 +303,7 @@ class Scheduler:
             "OWL_IMAGE_SPEC": self.env.OWL_IMAGE_SPEC,
             "EXTRA_PIP_PACKAGES": pdef["extra_pip_packages"],
         }
-        
+
         self.logger.debug("Creating job %s in namespace %s", uid, self.namespace)
         status = await k8s.kube_create_job(
             f"pipeline-{uid}",
@@ -312,6 +312,7 @@ class Scheduler:
             namespace=self.namespace,
             extraConfig=config.pipeline,
             env_vars=env_vars,
+            service_account_name=config.pipeline["serviceAccountName"],
         )
 
         heartbeat = {"status": "STARTING"}
