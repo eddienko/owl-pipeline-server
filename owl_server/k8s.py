@@ -27,13 +27,15 @@ log = logging.getLogger("owl.daemon.scheduler")
 # api_instance = client.BatchV1Api()
 
 
-def kube_delete_empty_pods(namespace="default", phase="Succeeded"):
+def kube_delete_empty_pods(namespace=None, phase=None):
     """
     Pods are never empty, just completed the lifecycle.
     As such they can be deleted.
     Pods can be without any running container in 2 states:
     Succeeded and Failed. This call doesn't terminate Failed pods by default.
     """
+    namespace = namespace or "default"
+    phase = phase or "Succeeded"
     # The always needed object
     deleteoptions = client.V1DeleteOptions()
     # We need the api entry point for pods
@@ -68,7 +70,7 @@ def kube_delete_empty_pods(namespace="default", phase="Succeeded"):
     return
 
 
-def kube_cleanup_finished_jobs(namespace="default", state="Finished"):
+def kube_cleanup_finished_jobs(namespace=None, state=None):
     """
     Since the TTL flag (ttl_seconds_after_finished) is still in alpha (Kubernetes 1.12) jobs need to be cleanup manually
     As such this method checks for existing Finished Jobs and deletes them.
@@ -83,6 +85,8 @@ def kube_cleanup_finished_jobs(namespace="default", state="Finished"):
              ex: kubectl delete pods/PODNAME
     """
     # deleteoptions = client.V1DeleteOptions()
+    namespace = namespace or "default"
+    state = state or "Finished"
     try:
         jobs = api_instance.list_namespaced_job(
             namespace, pretty=True, timeout_seconds=60
@@ -134,9 +138,9 @@ def kube_cleanup_finished_jobs(namespace="default", state="Finished"):
 def kube_create_job_object(
     name,
     container_image,
-    command="sleep 60",
-    namespace="default",
-    container_name="jobcontainer",
+    command=None,
+    namespace=None,
+    container_name=None,
     env_vars=None,
     extraConfig=None,
 ):
@@ -165,6 +169,9 @@ def kube_create_job_object(
     Docs3: https://github.com/kubernetes-client/python/issues/589
     """
     env_vars = env_vars or {}
+    namespace = namespace or "default"
+    command = command or "sleep 60"
+    container_name = container_name or "jobcontainer"
     # Body is the object Body
     body = client.V1Job(api_version="batch/v1", kind="Job")
     # Body needs Metadata
@@ -220,34 +227,35 @@ def kube_create_job_object(
 async def kube_create_job(
     name,
     image,
-    command="sleep 60",
-    namespace="default",
+    command=None,
+    namespace=None,
     extraConfig=None,
     env_vars=None,
 ):
+    namespace = namespace or "default"
     # Create the job definition
     body = kube_create_job_object(
         name,
         image,
         env_vars=env_vars,
         namespace=namespace,
-        command=command,
+        command=command or "sleep 60",
         extraConfig=extraConfig or {},
     )
 
     config.load_incluster_config()
     async with ApiClient() as api:
         v1 = client.BatchV1Api(api)
-        res = await v1.create_namespaced_job("default", body, pretty=True)
+        res = await v1.create_namespaced_job(namespace, body, pretty=True)
     return res
 
 
-async def kube_delete_job(name, namespace="default"):
+async def kube_delete_job(name, namespace=None):
     config.load_incluster_config()
     async with ApiClient() as api:
         v1 = client.BatchV1Api(api)
         res = await v1.delete_namespaced_job(
-            name, namespace, propagation_policy="Background", grace_period_seconds=0
+            name, namespace or "default", propagation_policy="Background", grace_period_seconds=0
         )
     return res
 
