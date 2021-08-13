@@ -1,0 +1,7 @@
+Development Status :: 5 - Production/Stable
+Intended Audience :: Developers
+Intended Audience :: Science/Research
+Operating System :: OS Independent
+Topic :: System :: Distributed Computing
+License :: OSI Approved :: GNU General Public License v3 (GPLv3)
+Programming Language :: Python :: 3.7

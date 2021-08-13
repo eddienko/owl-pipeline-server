@@ -1,0 +1,9 @@
+autopep8
+black
+pylint
+flake8
+flake8-bugbear
+better-exceptions
+bumpversion
+Sphinx
+sphinx-autodoc-typehints
