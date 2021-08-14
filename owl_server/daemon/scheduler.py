@@ -198,6 +198,8 @@ class Scheduler:
         for pipe in list(pipelines):
             if pipe["id"] in self.pipelines:
                 await self.stop_pipeline(pipe["id"], "CANCELLED")
+            else:
+                await self.update_pipeline(pipe["id"], "CANCELLED")
 
     async def stop(self):
         """Stop scheduler.

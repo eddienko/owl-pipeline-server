@@ -188,7 +188,12 @@ async def pipeline_update(
         )
     if username not in [OWL_USERNAME, res.user]:
         await check_admin(username)
-    if res.status not in ["TO_CANCEL"]:
+    update = False
+    if (res.status in ["TO_CANCEL"]) and (new == "CANCELLED"):
+        update = True
+    elif res.status not in ["TO_CANCEL"]:
+        update = True
+    if update:
         q = db.Pipeline.update().where(db.Pipeline.c.id == uid).values(status=new)
         await database.execute(q)
 
