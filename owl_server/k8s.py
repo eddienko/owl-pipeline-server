@@ -193,6 +193,11 @@ def kube_create_job_object(
     else:
         resourcesReq = None
 
+    if (security_context := extraConfig.podSecurityContext) is not None:
+        secReq = _make_spec_from_dict(security_context, client.V1PodSecurityContext)
+    else:
+        secReq = None
+
     volume_mounts = []
     for vm in extraConfig.volumeMounts:
         volume_mounts.append(_make_spec_from_dict(vm, client.V1VolumeMount))
@@ -217,6 +222,7 @@ def kube_create_job_object(
         termination_grace_period_seconds=30,
         volumes=volumes,
         service_account_name=service_account_name,
+        security_context=secReq,
     )
 
     # And finaly we can create our V1JobSpec!
