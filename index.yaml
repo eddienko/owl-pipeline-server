@@ -1,0 +1,14 @@
+apiVersion: v1
+entries:
+  owl:
+  - apiVersion: v2
+    appVersion: 1.16.0
+    created: "2021-08-16T13:24:56.636149238Z"
+    description: A Helm chart for Kubernetes
+    digest: aa8c45b8ad93d29a76e8bc0a0d55e6ec017190fbb636445ee565c172b88a7d6e
+    name: owl
+    type: application
+    urls:
+    - https://github.com/eddienko/owl-pipeline-server/releases/download/owl-0.1.2/owl-0.1.2.tgz
+    version: 0.1.2
+generated: "2021-08-16T13:24:56.636158038Z"
