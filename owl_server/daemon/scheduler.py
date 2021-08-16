@@ -110,6 +110,7 @@ class Scheduler:
                 asyncio.create_task(self.clean_pipelines()),
                 asyncio.create_task(self.cancel_pipelines()),
                 asyncio.create_task(self.query_prometheus()),
+                asyncio.create_task(self.logging_protocol())
             ]
         )
 
@@ -124,6 +125,17 @@ class Scheduler:
         self.logger.debug(
             "Tasks %s, Pipelines %s", len(self._tasks), len(self.pipelines)
         )
+
+    @safe_loop()
+    async def logging_protocol(self):
+        """Receive log lines in the ZMQ log address and
+        logs them to the console.
+        """
+        topic, msg = await self.log_router.recv_multipart()
+        msg = json.loads(msg.decode("utf8"))
+        record = logging.makeLogRecord(msg)
+        self.logger.handle(record)
+
 
     @safe_loop()
     async def query_prometheus(self):
@@ -295,8 +307,8 @@ class Scheduler:
         # logging -- to display logs from the API and Pipelines
         self.log_addr = f"tcp://0.0.0.0:{self.env.OWL_SCHEDULER_SERVICE_PORT_LOGS}"
         self.log_router = self.ctx.socket(zmq.SUB)
-        self.log_router.setsockopt(zmq.SUBSCRIBE, b"api")
-        self.log_router.setsockopt(zmq.SUBSCRIBE, b"pipeline")
+        self.log_router.setsockopt(zmq.SUBSCRIBE, b"API")
+        self.log_router.setsockopt(zmq.SUBSCRIBE, b"PIPELINE")
         self.log_router.bind(self.log_addr)
         self.logger.debug("Logs router address: %s", self.log_addr)
         await asyncio.sleep(0)

@@ -17,7 +17,7 @@ def run_api(args: Namespace) -> None:  # pragma: nocover
     from owl_server.api import app
     from owl_server.log import logconf
 
-    LOGGING_CONFIG.update(yaml.safe_load(logconf))
+    LOGGING_CONFIG.update(yaml.safe_load(logconf["api"]))
     api_port = int(config.env.OWL_API_SERVICE_PORT)
 
     uvicorn.run(app, host="0.0.0.0", port=api_port)

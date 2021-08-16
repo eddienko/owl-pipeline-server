@@ -1,3 +1,4 @@
+import json
 import logging.config
 import logging.handlers
 import os
@@ -7,63 +8,131 @@ import coloredlogs
 import yaml
 import zmq
 
-logconf = """
+logconf = {
+    "api": """
 version: 1
 disable_existing_loggers: False
 handlers:
   console:
-    class: logging.StreamHandler
+    class: owl_server.log.StreamHandler
     formatter: standard
     stream: 'ext://sys.stderr'
-  console_pipeline:
-    class: logging.StreamHandler
-    formatter: pipeline
-    stream: 'ext://sys.stderr'
-  file_pipeline:
-    class: owl_server.log.TimeRotatingFileHandler
-    filename: /var/run/owl/logs/pipeline_${JOBID}.log
-    formatter: pipeline
-    backupCount: 7
-  console_scheduler:
-    class: logging.StreamHandler
-    formatter: scheduler
-    stream: 'ext://sys.stderr'
-  file_scheduler:
-    class: owl_server.log.TimeRotatingFileHandler
-    filename: /var/run/owl/logs/scheduler.log
-    formatter: scheduler
-    when: "d"
-    backupCount: 7
-  console_api:
-    class: logging.StreamHandler
-    formatter: api
-    stream: 'ext://sys.stderr'
-  file_api:
+    topic: API
+  file:
     class: owl_server.log.TimeRotatingFileHandler
     filename: /var/run/owl/logs/api.log
-    formatter: scheduler
+    formatter: standard
     when: "d"
     backupCount: 7
+  zmq:
+    class: owl_server.log.PUBHandler
+    address: tcp://owl-scheduler:7002
+    topic: API
+    formatter: standard
 formatters:
-  pipeline:
-    class: owl_server.log.ColoredFormatter
-    format: "%(asctime)s PIPELINE %(levelname)s %(name)s %(funcName)s - %(message)s"
-  scheduler:
-    class: owl_server.log.ColoredFormatter
-    format: "%(asctime)s SCHEDULER %(levelname)s %(name)s %(funcName)s - %(message)s"
-  api:
-    class: owl_server.log.ColoredFormatter
-    format: "%(asctime)s API %(levelname)s %(name)s %(funcName)s - %(message)s"
   standard:
     class: owl_server.log.ColoredFormatter
-    format: "%(asctime)s %(levelname)s %(name)s %(funcName)s - %(message)s"
+    format: "%(asctime)s %(topic)s %(levelname)s %(name)s %(funcName)s - %(message)s"
 loggers:
-  owl.daemon.pipeline:
-    handlers: [console_pipeline, file_pipeline]
+  owl.cli:
+    handlers: [console]
     level: ${LOGLEVEL}
     propagate: false
+  root:
+    handlers: [console]
+    level: INFO
+    propagate: false
+  uvicorn.error:
+    handlers: [console, file, zmq]
+    level: ${LOGLEVEL}
+    propagate: false
+  uvicorn.access:
+    handlers: [console, file, zmq]
+    level: ${LOGLEVEL}
+    propagate: false
+  uvicorn:
+    handlers: [console, file, zmq]
+    level: ${LOGLEVEL}
+    propagate: false
+""",
+    "scheduler": """
+version: 1
+filters:
+  filter_scheduler:
+    (): owl_server.log.LogFilter
+    topic: SCHEDULER
+handlers:
+  console:
+    class: owl_server.log.StreamHandler
+    formatter: standard
+    stream: 'ext://sys.stderr'
+    topic: SCHEDULER
+  file:
+    class: owl_server.log.TimeRotatingFileHandler
+    filename: /var/run/owl/logs/scheduler.log
+    formatter: standard
+    when: "d"
+    backupCount: 7
+    topic: SCHEDULER
+    filters: ["filter_scheduler"]
+formatters:
+  standard:
+    class: owl_server.log.ColoredFormatter
+    format: "%(asctime)s %(topic)s %(levelname)s %(name)s %(funcName)s - %(message)s"
+loggers:
   owl.daemon.scheduler:
-    handlers: [console_scheduler, file_scheduler]
+    handlers: [console, file]
+    level: ${LOGLEVEL}
+    propagate: false
+  owl.cli:
+    handlers: [console, file]
+    level: ${LOGLEVEL}
+    propagate: false
+  root:
+    handlers: [console, file]
+    level: INFO
+    propagate: false
+""",
+    "cli": """
+version: 1
+disable_existing_loggers: False
+handlers:
+  console:
+    class: owl_server.log.StreamHandler
+    formatter: standard
+    stream: 'ext://sys.stderr'
+    topic: CONSOLE
+formatters:
+  standard:
+    class: owl_server.log.ColoredFormatter
+    format: "%(asctime)s %(topic)s %(levelname)s %(name)s %(funcName)s - %(message)s"
+loggers:
+  owl.cli:
+    handlers: [console]
+    level: ${LOGLEVEL}
+    propagate: false
+""",
+    "pipeline": """
+version: 1
+disable_existing_loggers: False
+handlers:
+  console:
+    class: owl_server.log.StreamHandler
+    formatter: standard
+    stream: 'ext://sys.stderr'
+    topic: PIPELINE
+  zmq:
+    class: owl_server.log.PUBHandler
+    address: tcp://owl-scheduler:7002
+    topic: PIPELINE
+    formatter: standard
+formatters:
+  standard:
+    class: owl_server.log.ColoredFormatter
+    format: "%(asctime)s %(topic)s %(levelname)s %(name)s %(funcName)s - %(message)s"
+loggers:
+  owl.daemon.pipeline:
+    handlers: [console, zmq]
     level: ${LOGLEVEL}
     propagate: false
   owl.cli:
@@ -74,33 +143,44 @@ loggers:
     handlers: [console]
     level: INFO
     propagate: false
-  uvicorn.error:
-    handlers: [console_api, file_api]
-    level: ${LOGLEVEL}
-    propagate: false
-  uvicorn.access:
-    handlers: [console_api, file_api]
-    level: ${LOGLEVEL}
-    propagate: false
-  uvicorn:
-    handlers: [console_api, file_api]
-    level: ${LOGLEVEL}
-    propagate: false
-"""
+""",
+}
 
 
-def initlog():
-    """Configure logging.
-    """
-    log_config = yaml.safe_load(logconf)
+def initlog(val):
+    """Configure logging."""
+    log_config = yaml.safe_load(logconf[val])
     logging.config.dictConfig(log_config)
 
 
 def logging_iteractive():
-    """Helper function for iteractive sessions.
-    """
+    """Helper function for iteractive sessions."""
     log_config = yaml.safe_load(logconf)
     initlog(log_config)
+
+
+class LogFilter(logging.Filter):
+    def __init__(self, topic=None):
+        self.topic = topic
+
+    def filter(self, record):
+        try:
+            return record.topic == self.topic
+        except:
+            return False
+
+
+class StreamHandler(logging.StreamHandler):
+    def __init__(self, stream=None, topic=None):
+        super().__init__(stream)
+        self.topic = topic or ""
+
+    def emit(self, record):
+        try:
+            record.topic
+        except AttributeError:
+            record.topic = self.topic
+        super().emit(record)
 
 
 class TimeRotatingFileHandler(logging.handlers.TimedRotatingFileHandler):
@@ -117,10 +197,18 @@ class TimeRotatingFileHandler(logging.handlers.TimedRotatingFileHandler):
     def __init__(self, filename: str, **kwargs):
         path = os.path.dirname(filename)
         os.makedirs(path, exist_ok=True)
+        self.topic = kwargs.pop("topic", "")
         super().__init__(filename, **kwargs)
 
     def open(self):
         super()._open()
+
+    def emit(self, record):
+        try:
+            record.topic
+        except AttributeError:
+            record.topic = self.topic
+        super().emit(record)
 
 
 class RotatingFileHandler(logging.handlers.RotatingFileHandler):
@@ -160,18 +248,62 @@ class ColoredFormatter(coloredlogs.ColoredFormatter):
     def __init__(self, fmt: str, datefmt: str, style: str):
         super().__init__(fmt, datefmt, style=style)
 
+    def format(self, record):
+        try:
+            record.topic
+        except AttributeError:
+            record.topic = ""
+        return super().format(record)
+
 
 class PUBHandler(logging.Handler):
     def __init__(self, address, topic):
-        with suppress(Exception):
+        super().__init__()
+        self.address = address
+        self.topic = topic
+        self.socket = None
+
+    def createSocket(self):
+        with suppress(zmq.ZMQError):
             self.ctx = zmq.Context()
             self.socket = self.ctx.socket(zmq.PUB)
-            self.socket.connect(address)
-            self.topic = topic
-        super().__init__()
+            self.socket.connect(self.address)
+
+    def makeJSON(self, record):
+        ei = record.exc_info
+        if ei:
+            # just to get traceback text into record.exc_text ...
+            self.format(record)
+        d = dict(record.__dict__)
+        d["msg"] = record.getMessage()
+        d["args"] = None
+        d["exc_info"] = None
+        # delete 'message' if present: redundant with 'msg'
+        d.pop("message", None)
+        d["topic"] = self.topic.upper()
+        return json.dumps(d)
+
+    def send(self, s):
+        if self.socket is None:
+            self.createSocket()
+        if self.socket:
+            topic = f"{self.topic}".encode("utf-8")
+            msg = s.encode("utf-8")
+            self.socket.send_multipart([topic, msg])
+
+    def handleError(self, record):
+        self.socket.close()
+        self.socket = None
 
     def emit(self, record):
-        msg = self.format(record).encode("utf-8")
-        with suppress(Exception):
-            topic = f"{self.topic}.{record.levelname}".encode("utf-8")
-            self.socket.send_multipart([topic, msg])
+        try:
+            s = self.makeJSON(record)
+            self.send(s)
+        except Exception:
+            self.handleError(record)
+
+    def close(self):
+        if self.socket:
+            self.socket.close()
+            self.socket = None
+            self.release()

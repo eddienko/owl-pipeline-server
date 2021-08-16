@@ -23,6 +23,8 @@ def run_pipeline(args: Namespace) -> None:
     arg
         Argparse namespace containing command line flags.
     """
+    initlog("pipeline")
+
     pdef = read_config(args.conf, schema_pipeline)
 
     try:

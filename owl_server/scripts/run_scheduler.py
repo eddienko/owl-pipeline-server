@@ -7,6 +7,7 @@ from pathlib import Path
 
 from owl_server.config import config
 from owl_server.daemon import Scheduler
+from owl_server.log import initlog
 
 logger = logging.getLogger("owl.cli")
 
@@ -19,6 +20,7 @@ def run_scheduler(args: Namespace) -> None:
     arg
         Argparse namespace containing command line flags.
     """
+    initlog("scheduler")
 
     for d in ["conf", "logs"]:
         path = Path("/var/run/owl") / d

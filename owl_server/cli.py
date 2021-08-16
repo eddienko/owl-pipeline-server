@@ -51,7 +51,7 @@ def main():
         $ owl-server --help
 
     """
-    initlog()
+    initlog("cli")
 
     args = parse_args(sys.argv[1:])
 
