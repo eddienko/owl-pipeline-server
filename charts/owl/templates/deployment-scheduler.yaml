@@ -64,7 +64,7 @@ spec:
             tcpSocket:
               port: zmq
           resources:
-            {{- toYaml .Values.resources | nindent 12 }}
+            {{- toYaml .Values.scheduler.resources | nindent 12 }}
       volumes:
         - name: owl-home
           persistentVolumeClaim:

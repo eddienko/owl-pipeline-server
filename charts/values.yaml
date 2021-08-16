@@ -7,28 +7,47 @@ image:
 serviceAccount:
   create: true
 
-token: "0f23d896466cfc39b5b04e9e835425648c594bbdf311eb12e090088d28afae25"
 loglevel: DEBUG
 dbi: sqlite:////var/run/owl/sqlite.db
 
-resources:
-  limits:
-    cpu: 2
-    memory: 7G
-  requests:
-    cpu: 2
-    memory: 7G
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  runAsGroup: 1000
 
 pipeline:
+  resources:
+    limits:
+      cpu: "1.75"
+      memory: 7G
+    requests:
+      cpu: 1
+      memory: 7G
   extraVolumeMounts:
     - name: meds1a
-      mountPath: /data/meds1_a
+      mountPath: /data/meds1_a/eglez
   extraVolumes:
     - name: meds1a
       hostPath:
-        path: /data/meds1_a
+        path: /data/meds1_a/eglez
         type: Directory
 
+scheduler:
+  resources:
+    limits:
+      cpu: 2
+      memory: 7G
+    requests:
+      cpu: 2
+      memory: 7G
+
+api:
+  resources:
+    limits:
+      cpu: 2
+      memory: 7G
+    requests:
+      cpu: 2
+      memory: 7G
+
 dask: {}
-scheduler: {}
-api: {}

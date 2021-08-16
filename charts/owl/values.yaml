@@ -31,28 +31,20 @@ pvc:
   storageClassName:
   storage: 10Gi
 
-scheduler: {}
+scheduler:
+  resources: {}
 
-api: {}
+api:
+  resources: {}
 
 pipeline:
-  uid: 1000
-  gid: 1000
-  resources:
-    limits:
-      cpu: "1.75"
-      memory: 7G
-    requests:
-      cpu: 1
-      memory: 7G
+  resources: {}
 
 dask: {}
 
 podAnnotations: {}
 
-podSecurityContext:
-  {}
-  # fsGroup: 2000
+podSecurityContext: {}
 
 securityContext:
   {}

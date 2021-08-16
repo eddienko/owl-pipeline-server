@@ -10,7 +10,7 @@ metadata:
     component: owl
 data:
   owl.yaml: |
-    token: {{ .Values.token }}
+    token: {{ randAlphaNum 64 | quote }}
     loglevel: {{ .Values.loglevel }}
     heartbeat: 30
     max_pipelines: 6
@@ -25,10 +25,8 @@ data:
       OWL_IMAGE_SPEC: ${OWL_IMAGE_SPEC}
 
     pipeline:
-      podSecurityContext:
-        runAsNonRoot: true
-        runAsUser: {{ .Values.pipeline.uid }}
-        runAsGroup: {{ .Values.pipeline.gid }}
+      securityContext:
+        {{- toYaml .Values.securityContext | nindent 8 }}
       resources:
         limits:
           cpu: "1.75"
@@ -75,19 +73,29 @@ data:
             spec:
               restartPolicy: Never
               serviceAccountName: {{ include "owl.serviceAccountName" . }}
-              podSecurityContext:
-                runAsNonRoot: true
-                runAsUser: {{ .Values.pipeline.uid }}
-                runAsGroup: {{ .Values.pipeline.gid }}
               containers:
                 - name: dask-scheduler
                   image: ${DASK_IMAGE_SPEC}
                   imagePullPolicy: {{ .Values.image.pullPolicy }}
+                  securityContext:
+                    {{- toYaml .Values.securityContext | nindent 20 }}
                   args:
                     - dask-scheduler
                   env:
                     - name: EXTRA_PIP_PACKAGES
                       value: ${EXTRA_PIP_PACKAGES}
+                    - name: OMP_NUM_THREADS
+                      value: 1
+                    - name: OPENBLAS_NUM_THREADS
+                      value: 1
+                    - name: MKL_NUM_THREADS
+                      value: 1
+                    - name: VECLIB_MAXIMUM_THREADS
+                      value: 1
+                    - name: NUMEXPR_NUM_THREADS
+                      value: 1
+                    - name: NUMEXPR_MAX_THREADS
+                      value: 1
                   volumeMounts:
                     - name: {{ include "owl.fullname" . }}-home
                       mountPath: /var/run/owl
@@ -127,6 +135,8 @@ data:
                 - name: dask-worker
                   image: ${DASK_IMAGE_SPEC}
                   imagePullPolicy: {{ .Values.image.pullPolicy }}
+                  securityContext:
+                    {{- toYaml .Values.securityContext | nindent 20 }}
                   args:
                     - dask-worker
                     - --nthreads
