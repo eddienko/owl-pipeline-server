@@ -27,7 +27,7 @@ pvc:
   annotations: {}
   selector: {}
   accessModes:
-    - ReadWriteOnce
+    - ReadWriteMany
   storageClassName:
   storage: 10Gi
 
