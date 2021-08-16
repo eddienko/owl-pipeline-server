@@ -308,7 +308,7 @@ class Scheduler:
 
         self.logger.debug("Creating job %s in namespace %s", uid, self.namespace)
         status = await k8s.kube_create_job(
-            f"pipeline-{uid}",
+            f"pipeline-{uid}-{user}",
             self.env.OWL_IMAGE_SPEC,
             command=command,
             namespace=self.namespace,
