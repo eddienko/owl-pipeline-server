@@ -1,0 +1,119 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "owl.fullname" . }}-api
+  labels:
+    {{- include "owl.labels.api" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "owl.selectorLabels.api" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "owl.selectorLabels.api" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "owl.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}-api
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args:
+            - owl-server
+            - api
+          env:
+            - name: OWL_IMAGE_SPEC
+              value: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+            - name: LOGLEVEL
+              value: "{{ .Values.loglevel }}"
+          volumeMounts:
+            - mountPath: /var/run/owl
+              name: owl-home
+            - name: owl-config
+              mountPath: /etc/owl
+          {{- with .Values.extraVolumeMounts }}
+          {{- . | toYaml | trimSuffix "\n" | nindent 12 }}
+          {{- end }}
+          {{- with .Values.api.extraVolumeMounts }}
+          {{- . | toYaml | trimSuffix "\n" | nindent 12 }}
+          {{- end }}
+          ports:
+            - name: http
+              containerPort: 8002
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      initContainers:
+        - name: {{ .Chart.Name }}-api-init
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args:
+            - owl-migrate 
+            - upgrade 
+            - head
+          env:
+            - name: OWL_IMAGE_SPEC
+              value: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+            - name: LOGLEVEL
+              value: "{{ .Values.loglevel }}"
+          volumeMounts:
+            - mountPath: /var/run/owl
+              name: owl-home
+            - name: owl-config
+              mountPath: /etc/owl
+          {{- with .Values.extraVolumeMounts }}
+          {{- . | toYaml | trimSuffix "\n" | nindent 12 }}
+          {{- end }}
+          {{- with .Values.api.extraVolumeMounts }}
+          {{- . | toYaml | trimSuffix "\n" | nindent 12 }}
+          {{- end }}
+      volumes:
+        - name: owl-home
+          persistentVolumeClaim:
+            claimName: owl-home
+        - name: owl-config
+          configMap:
+            name: {{ include "owl.fullname" . }}-owl-config
+        {{- with .Values.extraVolumes }}
+        {{- . | toYaml | trimSuffix "\n" | nindent 8 }}
+        {{- end }}
+        {{- with .Values.api.extraVolumes }}
+        {{- . | toYaml | trimSuffix "\n" | nindent 8 }}
+        {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

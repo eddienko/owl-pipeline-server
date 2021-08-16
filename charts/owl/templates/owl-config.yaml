@@ -1,0 +1,184 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ template "owl.fullname" . }}-owl-config
+  labels:
+    app: {{ template "owl.name" . }}
+    heritage: {{ .Release.Service | quote }}
+    release: {{ .Release.Name | quote }}
+    chart: {{ template "owl.chart" . }}
+    component: owl
+data:
+  owl.yaml: |
+    token: {{ .Values.token }}
+    loglevel: {{ .Values.loglevel }}
+    heartbeat: 30
+    max_pipelines: 6
+    dbi: {{ .Values.dbi }}
+
+    env:
+      OWL_SCHEDULER_SERVICE_HOST: ${OWL_SCHEDULER_SERVICE_HOST}
+      OWL_SCHEDULER_SERVICE_PORT_PIPE: ${OWL_SCHEDULER_SERVICE_PORT_PIPE}
+      OWL_SCHEDULER_SERVICE_PORT_LOGS: ${OWL_SCHEDULER_SERVICE_PORT_LOGS}
+      OWL_API_SERVICE_HOST: ${OWL_API_SERVICE_HOST}
+      OWL_API_SERVICE_PORT: ${OWL_API_SERVICE_PORT}
+      OWL_IMAGE_SPEC: ${OWL_IMAGE_SPEC}
+
+    pipeline:
+      podSecurityContext:
+        runAsNonRoot: true
+        runAsUser: {{ .Values.pipeline.uid }}
+        runAsGroup: {{ .Values.pipeline.gid }}
+      resources:
+        limits:
+          cpu: "1.75"
+          memory: "7G"
+        requests:
+          cpu: 1
+          memory: "7G"
+      serviceAccountName: {{ include "owl.serviceAccountName" . }}
+      volumeMounts:
+        - name: {{ include "owl.fullname" . }}-home
+          mountPath: /var/run/owl
+        - name: dask-config
+          mountPath: /etc/dask
+        - name: owl-config
+          mountPath: /etc/owl
+      {{- with .Values.extraVolumeMounts }}
+      {{- . | toYaml | trimSuffix "\n" | nindent 8 }}
+      {{- end }}
+      {{- with .Values.pipeline.extraVolumeMounts }}
+      {{- . | toYaml | trimSuffix "\n" | nindent 8 }}
+      {{- end }}
+      volumes:
+        - name: {{ include "owl.fullname" . }}-home
+          persistentVolumeClaim:
+            claimName: {{ include "owl.fullname" . }}-home
+        - name: dask-config
+          configMap:
+            name: owl-dask-config
+        - name: owl-config
+          configMap:
+            name: {{ include "owl.fullname" . }}-owl-config
+        {{- with .Values.extraVolumes }}
+        {{- . | toYaml | trimSuffix "\n" | nindent 8 }}
+        {{- end }}
+        {{- with .Values.pipeline.extraVolumes }}
+        {{- . | toYaml | trimSuffix "\n" | nindent 8 }}
+        {{- end }}
+
+    dask:
+      kubernetes:
+          # See: https://github.com/dask/dask-kubernetes/blob/main/dask_kubernetes/kubernetes.yaml
+          name: dask-${JOBID}-{uuid}
+          scheduler-template:
+            spec:
+              restartPolicy: Never
+              serviceAccountName: {{ include "owl.serviceAccountName" . }}
+              podSecurityContext:
+                runAsNonRoot: true
+                runAsUser: {{ .Values.pipeline.uid }}
+                runAsGroup: {{ .Values.pipeline.gid }}
+              containers:
+                - name: dask-scheduler
+                  image: ${DASK_IMAGE_SPEC}
+                  imagePullPolicy: {{ .Values.image.pullPolicy }}
+                  args:
+                    - dask-scheduler
+                  env:
+                    - name: EXTRA_PIP_PACKAGES
+                      value: ${EXTRA_PIP_PACKAGES}
+                  volumeMounts:
+                    - name: {{ include "owl.fullname" . }}-home
+                      mountPath: /var/run/owl
+                    - name: dask-config
+                      mountPath: /etc/dask
+                  {{- with .Values.extraVolumeMounts }}
+                  {{- . | toYaml | trimSuffix "\n" | nindent 20 }}
+                  {{- end }}
+                  {{- with .Values.pipeline.extraVolumeMounts }}
+                  {{- . | toYaml | trimSuffix "\n" | nindent 20 }}
+                  {{- end }}
+                  resources:
+                    limits:
+                      cpu: "1.75"
+                      memory: 7G
+                    requests:
+                      cpu: 1
+                      memory: 7G
+              volumes:
+                - name: {{ include "owl.fullname" . }}-home
+                  persistentVolumeClaim:
+                    claimName: {{ include "owl.fullname" . }}-home
+                - name: dask-config
+                  configMap:
+                    name: owl-dask-config
+                {{- with .Values.extraVolumes }}
+                {{- . | toYaml | trimSuffix "\n" | nindent 16 }}
+                {{- end }}
+                {{- with .Values.pipeline.extraVolumes }}
+                {{- . | toYaml | trimSuffix "\n" | nindent 16 }}
+                {{- end }}
+
+          worker-template:
+            spec:
+              restartPolicy: Never
+              containers:
+                - name: dask-worker
+                  image: ${DASK_IMAGE_SPEC}
+                  imagePullPolicy: {{ .Values.image.pullPolicy }}
+                  args:
+                    - dask-worker
+                    - --nthreads
+                    - "2"
+                    - --no-dashboard
+                    - --memory-limit
+                    - 7GB
+                    - --death-timeout
+                    - "60"
+                  env:
+                    - name: EXTRA_PIP_PACKAGES
+                      value: ${EXTRA_PIP_PACKAGES}
+                    - name: OMP_NUM_THREADS
+                      value: 1
+                    - name: OPENBLAS_NUM_THREADS
+                      value: 1
+                    - name: MKL_NUM_THREADS
+                      value: 1
+                    - name: VECLIB_MAXIMUM_THREADS
+                      value: 1
+                    - name: NUMEXPR_NUM_THREADS
+                      value: 1
+                    - name: NUMEXPR_MAX_THREADS
+                      value: 1
+                  volumeMounts:
+                    - name: {{ include "owl.fullname" . }}-home
+                      mountPath: /var/run/owl
+                    - name: dask-config
+                      mountPath: /etc/dask
+                  {{- with .Values.extraVolumeMounts }}
+                  {{- . | toYaml | trimSuffix "\n" | nindent 20 }}
+                  {{- end }}
+                  {{- with .Values.pipeline.extraVolumeMounts }}
+                  {{- . | toYaml | trimSuffix "\n" | nindent 20 }}
+                  {{- end }}
+                  resources:
+                    limits:
+                      cpu: "1.75"
+                      memory: 7G
+                    requests:
+                      cpu: 1
+                      memory: 7G
+              volumes:
+                - name: {{ include "owl.fullname" . }}-home
+                  persistentVolumeClaim:
+                    claimName: {{ include "owl.fullname" . }}-home
+                - name: dask-config
+                  configMap:
+                    name: owl-dask-config
+                {{- with .Values.extraVolumes }}
+                {{- . | toYaml | trimSuffix "\n" | nindent 16 }}
+                {{- end }}
+                {{- with .Values.pipeline.extraVolumes }}
+                {{- . | toYaml | trimSuffix "\n" | nindent 16 }}
+                {{- end }}

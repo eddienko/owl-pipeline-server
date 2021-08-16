@@ -1,0 +1,23 @@
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: {{ include "owl.fullname" . }}-home
+  labels:
+    {{- include "owl.labels.scheduler" . | nindent 4 }}
+  {{- with .Values.pvc.annotations }}
+  annotations:
+    {{- . | toYaml | trimSuffix "\n" | nindent 4 }}
+  {{- end }}
+spec:
+  {{- with .Values.pvc.selector }}
+  selector:
+    {{- . | toYaml | trimSuffix "\n" | nindent 4 }}
+  {{- end }}
+  {{- if typeIs "string" .Values.pvc.storageClassName }}
+  storageClassName: {{ .Values.pvc.storageClassName | quote }}
+  {{- end }}
+  accessModes:
+    {{- .Values.pvc.accessModes | toYaml | trimSuffix "\n" | nindent 4 }}
+  resources:
+    requests:
+      storage: {{ .Values.pvc.storage | quote }}

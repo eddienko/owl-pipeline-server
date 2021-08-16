@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "owl.fullname" . }}-api
+  labels:
+    {{- include "owl.labels.api" . | nindent 4 }}
+spec:
+  type: LoadBalancer
+  ports:
+    - port: 8002
+      targetPort: 8002
+      protocol: TCP
+      name: api
+  selector:
+    {{- include "owl.selectorLabels.api" . | nindent 4 }}
