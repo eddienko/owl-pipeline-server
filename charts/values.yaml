@@ -9,6 +9,7 @@ serviceAccount:
 
 loglevel: DEBUG
 dbi: sqlite:////var/run/owl/sqlite.db
+prometheus: http://prometheus-kube-prometheus-prometheus.monitoring:9090
 
 securityContext:
   runAsNonRoot: true

@@ -16,6 +16,7 @@ fullnameOverride: ""
 
 loglevel: DEBUG
 dbi: sqlite:////var/run/owl/sqlite.db
+prometheus: ""
 
 serviceAccount:
   # Specifies whether a service account should be created

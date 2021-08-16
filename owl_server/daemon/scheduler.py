@@ -32,12 +32,14 @@ class Scheduler:
         self.logger = logging.getLogger("owl.daemon.scheduler")
 
         self.env = config.env  # enviroment variables from config
-        self._token = config.pop("token")  # secret token to use in communication between API and OWL
+        self._token = config.pop(
+            "token"
+        )  # secret token to use in communication between API and OWL
 
         self.pipelines = {}  # list of pipelines running
         self._max_pipe = MAX_PIPELINES
-
-        config.pop("dbi")   # database configuration, remove it as it is not used here
+        self.kube_metrics = {}
+        config.pop("dbi")  # database configuration, remove it as it is not used here
 
         self.is_started = False
         self._tasks = []  # list of coroutines
@@ -99,8 +101,7 @@ class Scheduler:
         self.logger.info("Owl scheduler started")
 
     def _start_tasks(self):
-        """Add tasks to the loop.
-        """
+        """Add tasks to the loop."""
         self._tasks.extend(
             [
                 asyncio.create_task(self.load_pipelines()),
@@ -108,6 +109,7 @@ class Scheduler:
                 asyncio.create_task(self.status_pipelines()),
                 asyncio.create_task(self.clean_pipelines()),
                 asyncio.create_task(self.cancel_pipelines()),
+                asyncio.create_task(self.query_prometheus()),
             ]
         )
 
@@ -119,12 +121,47 @@ class Scheduler:
         """
         await asyncio.sleep(config.heartbeat)
         self._tasks = [task for task in self._tasks if not task.done()]
-        self.logger.debug("Tasks %s, Pipelines %s", len(self._tasks), len(self.pipelines))
+        self.logger.debug(
+            "Tasks %s, Pipelines %s", len(self._tasks), len(self.pipelines)
+        )
+
+    @safe_loop()
+    async def query_prometheus(self):
+        await asyncio.sleep(config.heartbeat)
+
+        url = config.prometheus
+        keys = [
+            "kube_pod_container_resource_requests_cpu_cores",
+            "kube_pod_container_resource_requests_memory_bytes",
+            "machine_cpu_cores",
+            "machine_memory_bytes",
+        ]
+        if not url:
+            return True
+
+        self.logger.debug("Querying Prometheus")
+        url = f"{url}/api/v1/query"
+        for query in keys:
+            params = {"query": query}
+            try:
+                async with timeout(config.heartbeat):
+                    async with self.session.get(url, params=params) as resp:
+                        val = await resp.json()
+            except ClientConnectorError:
+                self.logger.error("Unable to connect to Prometheus at %s", url)
+                return
+            except asyncio.TimeoutError:
+                self.logger.error("Prometheus request took too long. Cancelled")
+                return
+
+            val = val["data"]["result"]
+            m = sum(float(item["value"][1]) for item in val)
+            self.kube_metrics[query] = m
+            self.logger.debug("Metric %s : %s", query, m)
 
     @safe_loop()
     async def load_pipelines(self):
-        """Pipeline loader. Query pipelines from API and starts new.
-        """
+        """Pipeline loader. Query pipelines from API and starts new."""
         await asyncio.sleep(config.heartbeat)
 
         # We can set maintenance mode at runtime
@@ -163,15 +200,16 @@ class Scheduler:
                 self.logger.debug("Pipeline already in list %s", pipe["id"])
                 continue
             if len(self.pipelines) >= self._max_pipe:
-                self.logger.info("Maximum number of pipelines reached (%s)", self._max_pipe)
+                self.logger.info(
+                    "Maximum number of pipelines reached (%s)", self._max_pipe
+                )
                 break
 
             await self.start_pipeline(pipe)
 
     @safe_loop()
     async def cancel_pipelines(self):
-        """Query for pipelines to cancel.
-        """
+        """Query for pipelines to cancel."""
         await asyncio.sleep(config.heartbeat)
 
         # Check for pending pipelines
@@ -284,14 +322,16 @@ class Scheduler:
 
         pdef = await self.get_pipedef(pipe_config["name"])
         if pdef is None:
-            self.logger.error("Failed to obtain fingerprint for pipeline %s", config["name"])
+            self.logger.error(
+                "Failed to obtain fingerprint for pipeline %s", config["name"]
+            )
             raise Exception("Fingerprint failed")
 
         self.logger.debug("Starting pipeline ID %s", uid)
 
         with open(f"/var/run/owl/conf/pipeline_{uid}.yaml", "w") as fh:
             fh.write(json.dumps(pipe_config))
-        
+
         await self._tear_pipeline(uid)
 
         command = f"owl-server pipeline --conf /var/run/owl/conf/pipeline_{uid}.yaml"
@@ -325,7 +365,12 @@ class Scheduler:
         )
 
         heartbeat = {"status": "STARTING"}
-        self.pipelines[uid] = {"last": time.monotonic(), "heartbeat": heartbeat, "job": status, "name": jobname}
+        self.pipelines[uid] = {
+            "last": time.monotonic(),
+            "heartbeat": heartbeat,
+            "job": status,
+            "name": jobname,
+        }
         await self.update_pipeline(uid, heartbeat["status"])
         self._tasks.append(asyncio.create_task(self.heartbeat_pipeline(uid)))
 
@@ -379,7 +424,9 @@ class Scheduler:
         uid, msg = await self.pipe_router.recv_multipart()
         uid, msg = int(uid.decode()), json.loads(msg.decode())
         self.logger.debug("Received heartbeat from pipeline %s : %s", uid, msg)
-        self.pipelines[uid].update({"last": time.monotonic(), "heartbeat": msg, "received": True})
+        self.pipelines[uid].update(
+            {"last": time.monotonic(), "heartbeat": msg, "received": True}
+        )
         await self.update_pipeline(uid, msg["status"])
 
     @safe_loop()
@@ -433,7 +480,7 @@ class Scheduler:
         if "detail" in msg:
             self.logger.error(msg["detail"])
             return
-            
+
     async def get_pipedef(self, name: str):
         """Retrieve pipeline definion file from API
 
@@ -449,9 +496,7 @@ class Scheduler:
         self.logger.debug("Getting pipeline definition for %s", name)
         try:
             async with timeout(config.heartbeat // 2):
-                async with self.session.get(
-                    url, headers=headers
-                ) as resp:
+                async with self.session.get(url, headers=headers) as resp:
                     res = await resp.json()
         except ClientConnectorError:
             self.logger.error("Unable to connect to API at %s", url)

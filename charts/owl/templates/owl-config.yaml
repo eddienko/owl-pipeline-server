@@ -15,6 +15,7 @@ data:
     heartbeat: 30
     max_pipelines: 6
     dbi: {{ .Values.dbi }}
+    prometheus: {{ .Values.prometheus }}
 
     env:
       OWL_SCHEDULER_SERVICE_HOST: ${OWL_SCHEDULER_SERVICE_HOST}
