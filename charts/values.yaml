@@ -1,0 +1,34 @@
+image:
+  repository: imaxt/owl-server
+  pullPolicy: Always
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: "today"
+
+serviceAccount:
+  create: true
+
+token: "0f23d896466cfc39b5b04e9e835425648c594bbdf311eb12e090088d28afae25"
+loglevel: DEBUG
+dbi: sqlite:////var/run/owl/sqlite.db
+
+resources:
+  limits:
+    cpu: 2
+    memory: 7G
+  requests:
+    cpu: 2
+    memory: 7G
+
+pipeline:
+  extraVolumeMounts:
+    - name: meds1a
+      mountPath: /data/meds1_a
+  extraVolumes:
+    - name: meds1a
+      hostPath:
+        path: /data/meds1_a
+        type: Directory
+
+dask: {}
+scheduler: {}
+api: {}
