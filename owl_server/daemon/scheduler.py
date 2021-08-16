@@ -17,7 +17,7 @@ from owl_server.config import config
 
 from .utils import safe_loop
 
-MAX_PIPELINES = 1
+MAX_PIPELINES = 6
 
 
 class Scheduler:
@@ -304,11 +304,18 @@ class Scheduler:
             "DASK_IMAGE_SPEC": self.env.OWL_IMAGE_SPEC,
             "OWL_IMAGE_SPEC": self.env.OWL_IMAGE_SPEC,
             "EXTRA_PIP_PACKAGES": pdef["extra_pip_packages"],
+            "OMP_NUM_THREADS": "1",
+            "OPENBLAS_NUM_THREADS": "1",
+            "MKL_NUM_THREADS": "1",
+            "VECLIB_MAXIMUM_THREADS": "1",
+            "NUMEXPR_NUM_THREADS": "1",
+            "NUMEXPR_MAX_THREADS": "1",
         }
 
-        self.logger.debug("Creating job %s in namespace %s", uid, self.namespace)
+        jobname = f"pipeline-{uid}"
+        self.logger.debug("Creating job %s", jobname)
         status = await k8s.kube_create_job(
-            f"pipeline-{uid}-{user}",
+            jobname,
             self.env.OWL_IMAGE_SPEC,
             command=command,
             namespace=self.namespace,
@@ -318,7 +325,7 @@ class Scheduler:
         )
 
         heartbeat = {"status": "STARTING"}
-        self.pipelines[uid] = {"last": time.monotonic(), "heartbeat": heartbeat, "job": status}
+        self.pipelines[uid] = {"last": time.monotonic(), "heartbeat": heartbeat, "job": status, "name": jobname}
         await self.update_pipeline(uid, heartbeat["status"])
         self._tasks.append(asyncio.create_task(self.heartbeat_pipeline(uid)))
 
@@ -345,7 +352,8 @@ class Scheduler:
             await asyncio.sleep(0)
             return
         with suppress(Exception):
-            await k8s.kube_delete_job(f"pipeline-{uid}", self.namespace)
+            jobname = self.pipelines[uid]["name"]
+            await k8s.kube_delete_job(jobname, self.namespace)
         self.pipelines.pop(uid)
 
     @safe_loop()

@@ -193,7 +193,7 @@ def kube_create_job_object(
     else:
         resourcesReq = None
 
-    if (security_context := extraConfig.podSecurityContext) is not None:
+    if (security_context := extraConfig.securityContext) is not None:
         secReq = _make_spec_from_dict(security_context, client.V1PodSecurityContext)
     else:
         secReq = None
