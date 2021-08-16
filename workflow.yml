@@ -1,8 +1,0 @@
-- name: Run chart-releaser
-  uses: helm/chart-releaser-action@v1.2.0
-  with:
-    charts_dir: charts
-    config: cr.yml
-    charts_repo_url: https://eddienko.github.io/owl-pipeline-server
-  env:
-    CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
