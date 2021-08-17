@@ -10,7 +10,6 @@ requests
 sqlalchemy
 tornado
 transaction
-pyjwt>2
 pyyaml
 voluptuous
 databases
