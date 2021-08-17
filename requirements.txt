@@ -8,7 +8,6 @@ pyzmq
 psycopg2
 requests
 sqlalchemy
-tornado
 transaction
 pyyaml
 voluptuous
