@@ -1,7 +1,6 @@
 import asyncio
 import json
 import logging
-import pickle
 import time
 from contextlib import suppress
 from pathlib import Path
@@ -339,6 +338,8 @@ class Scheduler:
             )
             raise Exception("Fingerprint failed")
 
+        # TODO: check that resources requested can be allocated
+
         self.logger.debug("Starting pipeline ID %s", uid)
 
         with open(f"/var/run/owl/conf/pipeline_{uid}.yaml", "w") as fh:
@@ -346,7 +347,7 @@ class Scheduler:
 
         await self._tear_pipeline(uid)
 
-        command = f"owl-server pipeline"
+        command = "owl-server pipeline"
 
         env_vars = {
             "UID": uid,

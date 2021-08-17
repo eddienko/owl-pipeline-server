@@ -2,14 +2,13 @@ import json
 import logging.config
 import logging.handlers
 import os
-import sys
 from contextlib import suppress
 
 import coloredlogs
 import yaml
 import zmq
 
-from . import utils
+from . import utils  # noqa: F401
 
 logconf = {
     "api": """
