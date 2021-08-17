@@ -78,11 +78,11 @@ spec:
         {{- with .Values.scheduler.extraVolumes }}
         {{- . | toYaml | trimSuffix "\n" | nindent 8 }}
         {{- end }}
-      {{- with .Values.nodeSelector }}
+      {{- with .Values.scheduler.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- with .Values.affinity }}
+      {{- with .Values.scheduler.affinity }}
       affinity:
         {{- toYaml . | nindent 8 }}
       {{- end }}
