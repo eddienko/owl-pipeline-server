@@ -37,8 +37,6 @@ data:
           memory: "7G"
       serviceAccountName: {{ include "owl.serviceAccountName" . }}
       volumeMounts:
-        - name: {{ include "owl.fullname" . }}-home
-          mountPath: /var/run/owl
         - name: dask-config
           mountPath: /etc/dask
         - name: owl-config
@@ -50,9 +48,6 @@ data:
       {{- . | toYaml | trimSuffix "\n" | nindent 8 }}
       {{- end }}
       volumes:
-        - name: {{ include "owl.fullname" . }}-home
-          persistentVolumeClaim:
-            claimName: {{ include "owl.fullname" . }}-home
         - name: dask-config
           configMap:
             name: owl-dask-config
@@ -97,9 +92,11 @@ data:
                       value: 1
                     - name: NUMEXPR_MAX_THREADS
                       value: 1
+                    - name: LOGLEVEL
+                      value: ${LOGLEVEL}
+                    - name: JOBID
+                      value: ${JOBID}
                   volumeMounts:
-                    - name: {{ include "owl.fullname" . }}-home
-                      mountPath: /var/run/owl
                     - name: dask-config
                       mountPath: /etc/dask
                   {{- with .Values.extraVolumeMounts }}
@@ -116,9 +113,6 @@ data:
                       cpu: 1
                       memory: 7G
               volumes:
-                - name: {{ include "owl.fullname" . }}-home
-                  persistentVolumeClaim:
-                    claimName: {{ include "owl.fullname" . }}-home
                 - name: dask-config
                   configMap:
                     name: owl-dask-config
@@ -162,9 +156,11 @@ data:
                       value: 1
                     - name: NUMEXPR_MAX_THREADS
                       value: 1
+                    - name: LOGLEVEL
+                      value: ${LOGLEVEL}
+                    - name: JOBID
+                      value: ${JOBID}
                   volumeMounts:
-                    - name: {{ include "owl.fullname" . }}-home
-                      mountPath: /var/run/owl
                     - name: dask-config
                       mountPath: /etc/dask
                   {{- with .Values.extraVolumeMounts }}
@@ -181,9 +177,6 @@ data:
                       cpu: 1
                       memory: 7G
               volumes:
-                - name: {{ include "owl.fullname" . }}-home
-                  persistentVolumeClaim:
-                    claimName: {{ include "owl.fullname" . }}-home
                 - name: dask-config
                   configMap:
                     name: owl-dask-config

@@ -2,33 +2,36 @@ import json
 import logging.config
 import logging.handlers
 import os
+import sys
 from contextlib import suppress
 
 import coloredlogs
 import yaml
 import zmq
 
+from . import utils
+
 logconf = {
     "api": """
 version: 1
 disable_existing_loggers: False
+filters:
+  filter_api:
+    (): owl_server.log.LogFilter
+    topic: API
 handlers:
   console:
     class: owl_server.log.StreamHandler
     formatter: standard
     stream: 'ext://sys.stderr'
-    topic: API
+    filters: ["filter_api"]
   file:
     class: owl_server.log.TimeRotatingFileHandler
     filename: /var/run/owl/logs/api.log
     formatter: standard
     when: "d"
     backupCount: 7
-  zmq:
-    class: owl_server.log.PUBHandler
-    address: tcp://owl-scheduler:7002
-    topic: API
-    formatter: standard
+    filters: ["filter_api"]
 formatters:
   standard:
     class: owl_server.log.ColoredFormatter
@@ -43,15 +46,15 @@ loggers:
     level: INFO
     propagate: false
   uvicorn.error:
-    handlers: [console, file, zmq]
+    handlers: [console, file]
     level: ${LOGLEVEL}
     propagate: false
   uvicorn.access:
-    handlers: [console, file, zmq]
+    handlers: [console, file]
     level: ${LOGLEVEL}
     propagate: false
   uvicorn:
-    handlers: [console, file, zmq]
+    handlers: [console, file]
     level: ${LOGLEVEL}
     propagate: false
 """,
@@ -66,14 +69,13 @@ handlers:
     class: owl_server.log.StreamHandler
     formatter: standard
     stream: 'ext://sys.stderr'
-    topic: SCHEDULER
+    filters: ["filter_scheduler"]
   file:
     class: owl_server.log.TimeRotatingFileHandler
     filename: /var/run/owl/logs/scheduler.log
     formatter: standard
     when: "d"
     backupCount: 7
-    topic: SCHEDULER
     filters: ["filter_scheduler"]
 formatters:
   standard:
@@ -96,12 +98,16 @@ loggers:
     "cli": """
 version: 1
 disable_existing_loggers: False
+filters:
+  filter_console:
+    (): owl_server.log.LogFilter
+    topic: CONSOLE
 handlers:
   console:
     class: owl_server.log.StreamHandler
     formatter: standard
     stream: 'ext://sys.stderr'
-    topic: CONSOLE
+    filters: ["filter_console"]
 formatters:
   standard:
     class: owl_server.log.ColoredFormatter
@@ -115,32 +121,48 @@ loggers:
     "pipeline": """
 version: 1
 disable_existing_loggers: False
+filters:
+  filter_pipeline:
+    (): owl_server.log.LogFilter
+    topic: PIPELINE
+    jobid: ${JOBID}
 handlers:
   console:
     class: owl_server.log.StreamHandler
     formatter: standard
     stream: 'ext://sys.stderr'
-    topic: PIPELINE
+    filters: ["filter_pipeline"]
+  file:
+    class: owl_server.log.TimeRotatingFileHandler
+    filename: /tmp/pipeline.log
+    formatter: standard
+    when: "d"
+    backupCount: 7
+    filters: ["filter_pipeline"]
   zmq:
     class: owl_server.log.PUBHandler
     address: tcp://owl-scheduler:7002
-    topic: PIPELINE
     formatter: standard
+    filters: ["filter_pipeline"]
 formatters:
   standard:
     class: owl_server.log.ColoredFormatter
     format: "%(asctime)s %(topic)s %(levelname)s %(name)s %(funcName)s - %(message)s"
 loggers:
   owl.daemon.pipeline:
-    handlers: [console, zmq]
+    handlers: [console, file, zmq]
     level: ${LOGLEVEL}
     propagate: false
   owl.cli:
-    handlers: [console]
+    handlers: [console, file, zmq]
     level: ${LOGLEVEL}
     propagate: false
+  distributed:
+    handlers: [console, file, zmq]
+    level: INFO
+    propagate: false
   root:
-    handlers: [console]
+    handlers: [console, file, zmq]
     level: INFO
     propagate: false
 """,
@@ -151,6 +173,7 @@ def initlog(val):
     """Configure logging."""
     log_config = yaml.safe_load(logconf[val])
     logging.config.dictConfig(log_config)
+    return log_config
 
 
 def logging_iteractive():
@@ -160,27 +183,22 @@ def logging_iteractive():
 
 
 class LogFilter(logging.Filter):
-    def __init__(self, topic=None):
-        self.topic = topic
+    def __init__(self, **kwargs):
+        self.kwargs = kwargs
 
     def filter(self, record):
-        try:
-            return record.topic == self.topic
-        except:
-            return False
+        flag = True
+        for k, v in self.kwargs.items():
+            try:
+                flag = flag and (getattr(record, k) == v)
+            except AttributeError:
+                setattr(record, k, v)
+        return flag
 
 
 class StreamHandler(logging.StreamHandler):
-    def __init__(self, stream=None, topic=None):
+    def __init__(self, stream=None):
         super().__init__(stream)
-        self.topic = topic or ""
-
-    def emit(self, record):
-        try:
-            record.topic
-        except AttributeError:
-            record.topic = self.topic
-        super().emit(record)
 
 
 class TimeRotatingFileHandler(logging.handlers.TimedRotatingFileHandler):
@@ -197,21 +215,13 @@ class TimeRotatingFileHandler(logging.handlers.TimedRotatingFileHandler):
     def __init__(self, filename: str, **kwargs):
         path = os.path.dirname(filename)
         os.makedirs(path, exist_ok=True)
-        self.topic = kwargs.pop("topic", "")
         super().__init__(filename, **kwargs)
 
     def open(self):
         super()._open()
 
-    def emit(self, record):
-        try:
-            record.topic
-        except AttributeError:
-            record.topic = self.topic
-        super().emit(record)
 
-
-class RotatingFileHandler(logging.handlers.RotatingFileHandler):
+class PipelineFileHandler(logging.FileHandler):
     """Time rotating file handler.
 
     It makes the base directory if it does not exist.
@@ -226,7 +236,6 @@ class RotatingFileHandler(logging.handlers.RotatingFileHandler):
         path = os.path.dirname(filename)
         os.makedirs(path, exist_ok=True)
         super().__init__(filename, **kwargs)
-        self.doRollover()
 
     def open(self):
         super()._open()
@@ -257,10 +266,9 @@ class ColoredFormatter(coloredlogs.ColoredFormatter):
 
 
 class PUBHandler(logging.Handler):
-    def __init__(self, address, topic):
+    def __init__(self, address):
         super().__init__()
         self.address = address
-        self.topic = topic
         self.socket = None
 
     def createSocket(self):
@@ -280,14 +288,13 @@ class PUBHandler(logging.Handler):
         d["exc_info"] = None
         # delete 'message' if present: redundant with 'msg'
         d.pop("message", None)
-        d["topic"] = self.topic.upper()
         return json.dumps(d)
 
-    def send(self, s):
+    def send(self, s, topic):
         if self.socket is None:
             self.createSocket()
         if self.socket:
-            topic = f"{self.topic}".encode("utf-8")
+            topic = f"{topic}".encode("utf-8")
             msg = s.encode("utf-8")
             self.socket.send_multipart([topic, msg])
 
@@ -298,7 +305,7 @@ class PUBHandler(logging.Handler):
     def emit(self, record):
         try:
             s = self.makeJSON(record)
-            self.send(s)
+            self.send(s, record.topic)
         except Exception:
             self.handleError(record)
 

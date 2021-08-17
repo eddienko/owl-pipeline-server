@@ -1,16 +1,21 @@
+import logging
 import os
 import shutil
+import sys
 import traceback
 from contextlib import suppress
 from functools import wraps
 from pathlib import Path
-from typing import Callable, Dict
+from typing import Callable, Dict, Optional
 
 import pkg_resources
 import voluptuous as vo
+import yaml
 from distributed import Client
+from owl_server.log import logconf
+from owl_server.plugins import LoggingPlugin
 
-# from owl_server.log import initlog
+logger = logging.getLogger("owl.daemon.scheduler")
 
 PIPELINES = dict()
 
@@ -52,7 +57,9 @@ class register_pipeline:
                     raise Exception(
                         "Error occurred. Original traceback " "is\n%s\n" % traceback_str
                     )
-                # client.run(initlog, logconfig)
+                c = yaml.safe_load(logconf["pipeline"])
+                plugin = LoggingPlugin(c)
+                client.register_worker_plugin(plugin)
             else:
                 client = None
             try:

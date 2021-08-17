@@ -11,6 +11,7 @@ from collections.abc import Mapping
 
 import yaml
 
+from . import utils
 from .schema import AttrDict, schema_server
 
 paths = [
@@ -31,21 +32,6 @@ global_config = config = AttrDict()
 config_lock = threading.Lock()
 
 defaults = []
-
-
-_path_matcher = re.compile(r"(\S+)?(\$\{([^}^{]+)\})")
-
-
-def _path_constructor(loader, node):
-    """Extract the matched value, expand env variable, and replace the match."""
-    value = node.value
-    match = _path_matcher.match(value)
-    env_var = match.groups()[2]
-    return value.replace(match.groups()[1], os.environ.get(env_var, ""))
-
-
-yaml.add_implicit_resolver("!path", _path_matcher, None, yaml.SafeLoader)
-yaml.add_constructor("!path", _path_constructor, yaml.SafeLoader)
 
 
 def canonical_name(k, config):

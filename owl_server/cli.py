@@ -1,3 +1,5 @@
+import io
+import os
 import sys
 from argparse import ArgumentParser, FileType, Namespace
 from typing import List
@@ -33,7 +35,9 @@ def parse_args(input: List[str]) -> Namespace:
 
     # Run a pipeline
     run = subparsers.add_parser("pipeline")
-    run.add_argument("--conf", required=False, type=FileType("r"))
+    run.add_argument(
+        "conf", nargs="?", type=FileType("r"), default=io.StringIO(os.getenv("PIPEDEF"))
+    )
     run.set_defaults(func=run_pipeline)
 
     args = parser.parse_args(input)

@@ -4,20 +4,20 @@ metadata:
   name: {{ include "owl.fullname" . }}-home
   labels:
     {{- include "owl.labels.scheduler" . | nindent 4 }}
-  {{- with .Values.pvc.annotations }}
+  {{- with .Values.pvchome.annotations }}
   annotations:
     {{- . | toYaml | trimSuffix "\n" | nindent 4 }}
   {{- end }}
 spec:
-  {{- with .Values.pvc.selector }}
+  {{- with .Values.pvchome.selector }}
   selector:
     {{- . | toYaml | trimSuffix "\n" | nindent 4 }}
   {{- end }}
-  {{- if typeIs "string" .Values.pvc.storageClassName }}
-  storageClassName: {{ .Values.pvc.storageClassName | quote }}
+  {{- if typeIs "string" .Values.pvchome.storageClassName }}
+  storageClassName: {{ .Values.pvchome.storageClassName | quote }}
   {{- end }}
   accessModes:
-    {{- .Values.pvc.accessModes | toYaml | trimSuffix "\n" | nindent 4 }}
+    {{- .Values.pvchome.accessModes | toYaml | trimSuffix "\n" | nindent 4 }}
   resources:
     requests:
-      storage: {{ .Values.pvc.storage | quote }}
+      storage: {{ .Values.pvchome.storage | quote }}

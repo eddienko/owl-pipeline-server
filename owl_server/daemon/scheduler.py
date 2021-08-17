@@ -14,6 +14,7 @@ from aiohttp.client_exceptions import ClientConnectorError
 from async_timeout import timeout
 from owl_server import k8s
 from owl_server.config import config
+from owl_server.log import LogFilter, PipelineFileHandler
 
 from .utils import safe_loop
 
@@ -135,7 +136,6 @@ class Scheduler:
         msg = json.loads(msg.decode("utf8"))
         record = logging.makeLogRecord(msg)
         self.logger.handle(record)
-
 
     @safe_loop()
     async def query_prometheus(self):
@@ -307,7 +307,7 @@ class Scheduler:
         # logging -- to display logs from the API and Pipelines
         self.log_addr = f"tcp://0.0.0.0:{self.env.OWL_SCHEDULER_SERVICE_PORT_LOGS}"
         self.log_router = self.ctx.socket(zmq.SUB)
-        self.log_router.setsockopt(zmq.SUBSCRIBE, b"API")
+        # self.log_router.setsockopt(zmq.SUBSCRIBE, b"API")
         self.log_router.setsockopt(zmq.SUBSCRIBE, b"PIPELINE")
         self.log_router.bind(self.log_addr)
         self.logger.debug("Logs router address: %s", self.log_addr)
@@ -346,13 +346,14 @@ class Scheduler:
 
         await self._tear_pipeline(uid)
 
-        command = f"owl-server pipeline --conf /var/run/owl/conf/pipeline_{uid}.yaml"
+        command = f"owl-server pipeline"
 
         env_vars = {
             "UID": uid,
             "JOBID": uid,
             "USER": user,
             "LOGLEVEL": config.loglevel,
+            "PIPEDEF": json.dumps(pipe_config),
             "DASK_IMAGE_SPEC": self.env.OWL_IMAGE_SPEC,
             "OWL_IMAGE_SPEC": self.env.OWL_IMAGE_SPEC,
             "EXTRA_PIP_PACKAGES": pdef["extra_pip_packages"],
@@ -384,9 +385,18 @@ class Scheduler:
             "name": jobname,
         }
         await self.update_pipeline(uid, heartbeat["status"])
+
         self._tasks.append(asyncio.create_task(self.heartbeat_pipeline(uid)))
 
-        print(config.pipeline)
+        # ************
+        logfile = f"/var/run/owl/logs/pipeline_{uid}.log"
+        handler = PipelineFileHandler(logfile)
+        formatter = self.logger.handlers[1].formatter
+        logfilter = LogFilter(topic="PIPELINE", jobid=f"{uid}")
+        handler.setFormatter(formatter)
+        handler.addFilter(logfilter)
+        self.logger.addHandler(handler)
+
         return status
 
     async def stop_pipeline(self, uid: int, status: str):

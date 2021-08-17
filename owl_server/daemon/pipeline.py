@@ -96,9 +96,9 @@ class Pipeline:
     async def start_dask_cluster(self):
         self.logger.info("Starting Dask cluster")
         self.dask_config()
-        self.cluster = await KubeCluster(asynchronous=True)
         nworkers = self.pdef["resources"]["workers"]
-        self.cluster.adapt(minimum=nworkers, maximum=nworkers)
+        self.cluster = await KubeCluster(asynchronous=True, n_workers=nworkers)
+        # self.cluster.adapt(minimum=nworkers, maximum=nworkers)
         self.logger.debug("Scheduler address: %s", self.cluster.scheduler_address)
 
     def dask_config(self):
@@ -125,8 +125,8 @@ class Pipeline:
                 "memory": f"{memory}G",
             },
             "requests": {
-                "cpu": f"{nthreads*nprocs // 2}",
-                "memory": f"{memory // 2}G",
+                "cpu": f"{nthreads*nprocs}",
+                "memory": f"{memory}G",
             },
         }
 
