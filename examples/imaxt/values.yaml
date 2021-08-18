@@ -1,8 +1,8 @@
 image:
   repository: imaxt/owl-server
-  pullPolicy: Always
+  pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
-  tag: "today"
+  # tag: "today"
 
 serviceAccount:
   create: true
@@ -19,10 +19,10 @@ securityContext:
 pipeline:
   resources:
     limits:
-      cpu: "1.75"
+      cpu: 2
       memory: 7G
     requests:
-      cpu: 1
+      cpu: 2
       memory: 7G
   extraVolumeMounts:
     - name: meds1a
