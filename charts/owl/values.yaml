@@ -16,6 +16,7 @@ fullnameOverride: ""
 
 loglevel: DEBUG
 dbi: sqlite:////var/run/owl/sqlite.db
+heartbeat: 30
 prometheus: ""
 
 serviceAccount:

@@ -12,7 +12,7 @@ data:
   owl.yaml: |
     token: {{ randAlphaNum 64 | quote }}
     loglevel: {{ .Values.loglevel }}
-    heartbeat: 30
+    heartbeat: {{ .Values.heartbeat }}
     max_pipelines: 6
     dbi: {{ .Values.dbi }}
     prometheus: {{ .Values.prometheus }}
