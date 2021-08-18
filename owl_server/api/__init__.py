@@ -132,15 +132,20 @@ class PipeDef(BaseModel):
 
 @app.get("/api/pipeline/list/{status}")
 @authenticate()
-async def pipeline_list(status: str, authentication=Header(None), username=None):
+async def pipeline_list(
+    status: str, listall: bool = False, authentication=Header(None), username=None
+):
     st = await check_status(status.upper())
     q = db.Pipeline.select()
     if st not in ["ALL"]:
         q = q.where(db.Pipeline.c.status == st)
     if username not in [OWL_USERNAME]:
-        try:
-            await check_admin(username)
-        except HTTPException:
+        if listall:
+            try:
+                await check_admin(username)
+            except HTTPException:
+                q = q.where(db.Pipeline.c.user == username)
+        else:
             q = q.where(db.Pipeline.c.user == username)
     res = await database.fetch_all(q)
     return res
