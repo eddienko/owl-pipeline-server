@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if [[ ! -z "${RUN_DEVELOP:-}" ]]; then
-    pip install git+https://github.com/eddienko/owl-pipeline-server.git
+    pip install git+https://github.com/eddienko/owl-pipeline-server.git@devel
 else
     pip install owl-pipeline-server==0.6.1
 fi
