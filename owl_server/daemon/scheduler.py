@@ -17,7 +17,7 @@ from owl_server.log import LogFilter, PipelineFileHandler
 
 from .utils import safe_loop
 
-MAX_PIPELINES = 6
+MAX_PIPELINES = 999
 
 
 class Scheduler:
@@ -37,7 +37,7 @@ class Scheduler:
         )  # secret token to use in communication between API and OWL
 
         self.pipelines = {}  # list of pipelines running
-        self._max_pipe = MAX_PIPELINES
+        self._max_pipe = config.max_pipelines or MAX_PIPELINES
         self.kube_metrics = {}
         config.pop("dbi")  # database configuration, remove it as it is not used here
 
@@ -184,7 +184,7 @@ class Scheduler:
         # Maximum number of pipelines at runtime
         if (maxpipe := Path("/var/run/owl/maxpipe")).exists():
             with maxpipe.open() as fh:
-                self._max_pipe = int(fh.read())
+                self._max_pipe = int(fh.read()) or MAX_PIPELINES
 
         # Check for pending pipelines
         root = "/api/pipeline/list/pending"
@@ -465,6 +465,28 @@ class Scheduler:
         token, msg = await self.admin_router.recv_multipart()
         token, msg = token.decode(), json.loads(msg.decode())
         self.logger.debug("Received administrative command %s", msg)
+        if "maintenance" in msg:
+            fname = Path("/var/run/owl/nopipe")
+            if msg["maintenance"] == "on":
+                fname.touch()
+                self.logger.info("Setting maintenance mode ON")
+            elif msg["maintenance"] == "off":
+                fname.unlink(missing_ok=True)
+                self.logger.info("Setting maintenance mode OFF")
+        elif "maxpipe" in msg:
+            fname = Path("/var/run/owl/maxpipe")
+            try:
+                maxpipe = int(msg["maxpipe"])
+            except Exception:
+                return
+            if maxpipe > 0:
+                with fname.open("w") as fh:
+                    fh.write(f"{maxpipe}")
+                self.logger.info("Setting maximum pipelines to %s", maxpipe)
+            else:
+                fname.unlink(missing_ok=True)
+                self.logger.info("Removing maximum pipelines constrain")
+
         
 
     @safe_loop()
