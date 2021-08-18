@@ -132,7 +132,7 @@ schema_server = AttrSchema(
 schema_resources = AttrSchema(
     {
         vo.Optional("workers", default=3): vo.All(int, vo.Range(min=1, max=100)),
-        vo.Optional("memory", default=7): vo.All(int, vo.Range(min=2, max=100)),
+        vo.Optional("memory", default=7): vo.All(int, vo.Range(min=1, max=100)),
         vo.Optional("threads", default=2): vo.All(int, vo.Range(min=1, max=100)),
         vo.Optional("processes", default=1): vo.All(int, vo.Range(min=1, max=100)),
         vo.Optional("image"): DockerImage(),
