@@ -15,5 +15,9 @@ spec:
       targetPort: 7002
       protocol: TCP
       name: logs
+    - port: 7003
+      targetPort: 7003
+      protocol: TCP
+      name: admin
   selector:
     {{- include "owl.selectorLabels.scheduler" . | nindent 4 }}

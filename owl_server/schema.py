@@ -99,6 +99,9 @@ schema_env = AttrSchema(
         vo.Required("OWL_SCHEDULER_SERVICE_PORT_LOGS"): vo.All(
             vo.Coerce(int), vo.Range(min=1000, max=9999)
         ),
+        vo.Required("OWL_SCHEDULER_SERVICE_PORT_ADMIN"): vo.All(
+            vo.Coerce(int), vo.Range(min=1000, max=9999)
+        ),
         vo.Required("OWL_API_SERVICE_HOST"): vo.Any(
             vo.All(str, IpAddress()), vo.All(str, Hostname())
         ),

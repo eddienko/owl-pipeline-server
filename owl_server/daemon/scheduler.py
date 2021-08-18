@@ -110,7 +110,8 @@ class Scheduler:
                 asyncio.create_task(self.clean_pipelines()),
                 asyncio.create_task(self.cancel_pipelines()),
                 asyncio.create_task(self.query_prometheus()),
-                asyncio.create_task(self.logging_protocol())
+                asyncio.create_task(self.logging_protocol()),
+                asyncio.create_task(self.admin_commands()),
             ]
         )
 
@@ -303,6 +304,13 @@ class Scheduler:
         self.logger.debug("Pipeline router address: %s", self.pipe_addr)
         self.pipe_router.bind(self.pipe_addr)
 
+        # administrative -- to get messages from the admin user through the API
+        self.admin_addr = f"tcp://0.0.0.0:{self.env.OWL_SCHEDULER_SERVICE_PORT_ADMIN}"
+        self.admin_router = self.ctx.socket(zmq.ROUTER)
+        self.admin_router.set(zmq.ROUTER_HANDOVER, 1)
+        self.logger.debug("Admin router address: %s", self.admin_addr)
+        self.admin_router.bind(self.admin_addr)
+
         # logging -- to display logs from the API and Pipelines
         self.log_addr = f"tcp://0.0.0.0:{self.env.OWL_SCHEDULER_SERVICE_PORT_LOGS}"
         self.log_router = self.ctx.socket(zmq.SUB)
@@ -451,6 +459,13 @@ class Scheduler:
             {"last": time.monotonic(), "heartbeat": msg, "received": True}
         )
         await self.update_pipeline(uid, msg["status"])
+
+    @safe_loop()
+    async def admin_commands(self):
+        token, msg = await self.admin_router.recv_multipart()
+        token, msg = token.decode(), json.loads(msg.decode())
+        self.logger.debug("Received administrative command %s", msg)
+        
 
     @safe_loop()
     async def clean_pipelines(self):
