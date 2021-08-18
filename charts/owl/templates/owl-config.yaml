@@ -10,7 +10,7 @@ metadata:
     component: owl
 data:
   owl.yaml: |
-    token: {{ randAlphaNum 64 | quote }}
+    token: {{ .Values.token }}
     loglevel: {{ .Values.loglevel }}
     heartbeat: {{ .Values.heartbeat }}
     max_pipelines: 6
