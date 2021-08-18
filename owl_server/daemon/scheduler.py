@@ -32,6 +32,7 @@ class Scheduler:
         self.logger = logging.getLogger("owl.daemon.scheduler")
 
         self.env = config.env  # enviroment variables from config
+        self.heartbeat = config.heartbeat
         self._token = config.pop(
             "token"
         )  # secret token to use in communication between API and OWL
@@ -121,7 +122,7 @@ class Scheduler:
 
         Logs number of tasks and pipelines priodically.
         """
-        await asyncio.sleep(config.heartbeat)
+        await asyncio.sleep(self.heartbeat)
         self._tasks = [task for task in self._tasks if not task.done()]
         self.logger.debug(
             "Tasks %s, Pipelines %s", len(self._tasks), len(self.pipelines)
@@ -139,7 +140,7 @@ class Scheduler:
 
     @safe_loop()
     async def query_prometheus(self):
-        await asyncio.sleep(config.heartbeat)
+        await asyncio.sleep(self.heartbeat)
 
         url = config.prometheus
         keys = [
@@ -156,7 +157,7 @@ class Scheduler:
         for query in keys:
             params = {"query": query}
             try:
-                async with timeout(config.heartbeat):
+                async with timeout(self.heartbeat):
                     async with self.session.get(url, params=params) as resp:
                         val = await resp.json()
             except ClientConnectorError:
@@ -174,7 +175,7 @@ class Scheduler:
     @safe_loop()
     async def load_pipelines(self):
         """Pipeline loader. Query pipelines from API and starts new."""
-        await asyncio.sleep(config.heartbeat)
+        await asyncio.sleep(self.heartbeat)
 
         # We can set maintenance mode at runtime
         if Path("/var/run/owl/nopipe").exists():
@@ -193,7 +194,7 @@ class Scheduler:
 
         self.logger.debug("Checking for pipelines")
         try:
-            async with timeout(config.heartbeat):
+            async with timeout(self.heartbeat):
                 async with self.session.get(url, headers=headers) as resp:
                     pipelines = await resp.json()
         except ClientConnectorError:
@@ -222,7 +223,7 @@ class Scheduler:
     @safe_loop()
     async def cancel_pipelines(self):
         """Query for pipelines to cancel."""
-        await asyncio.sleep(config.heartbeat)
+        await asyncio.sleep(self.heartbeat)
 
         # Check for pending pipelines
         root = "/api/pipeline/list/to_cancel"
@@ -231,7 +232,7 @@ class Scheduler:
 
         self.logger.debug("Checking for pipelines to cancel")
         try:
-            async with timeout(config.heartbeat):
+            async with timeout(self.heartbeat):
                 async with self.session.get(url, headers=headers) as resp:
                     pipelines = await resp.json()
         except ClientConnectorError:
@@ -448,7 +449,7 @@ class Scheduler:
         self.logger.debug("Sending heartbeat to pipeline %s", uid)
         await self.pipe_router.send_multipart([str(uid).encode("utf-8"), b"heartbeat"])
         self.pipelines[uid]["received"] = "False"
-        await asyncio.sleep(config.heartbeat)
+        await asyncio.sleep(self.heartbeat)
 
     @safe_loop()
     async def status_pipelines(self):
@@ -486,7 +487,16 @@ class Scheduler:
             else:
                 fname.unlink(missing_ok=True)
                 self.logger.info("Removing maximum pipelines constrain")
-
+        elif "heartbeat" in msg:
+            try:
+                heartbeat = int(msg["heartbeat"])
+            except Exception:
+                return
+            if heartbeat > 0:
+                self.heartbeat = heartbeat
+            else:
+                self.heartbeat = config.heartbeat
+            self.logger.info("Setting heartbeat to %s seconds", self.heartbeat)
         
 
     @safe_loop()
@@ -500,11 +510,11 @@ class Scheduler:
             elif status in ["ERROR"]:
                 self.logger.debug("Stopping pipeline %s with status %s", pipe, status)
                 await self.stop_pipeline(pipe, status)
-            elif time.monotonic() - last > 5 * config.heartbeat:
+            elif time.monotonic() - last > 5 * self.heartbeat:
                 self.logger.debug("Heartbeat not received. Stopping pipeline %s", pipe)
                 status = "ERROR"
                 await self.stop_pipeline(pipe, status)
-        await asyncio.sleep(config.heartbeat)
+        await asyncio.sleep(self.heartbeat)
 
     async def update_pipeline(self, uid: int, status: str):
         """Update pipeline status.
@@ -527,7 +537,7 @@ class Scheduler:
         headers = {"Authentication": f"owl {self._token}"}
 
         try:
-            async with timeout(config.heartbeat):
+            async with timeout(self.heartbeat):
                 async with self.session.post(url, json=data, headers=headers) as resp:
                     msg = await resp.json()
         except ClientConnectorError:
@@ -555,7 +565,7 @@ class Scheduler:
 
         self.logger.debug("Getting pipeline definition for %s", name)
         try:
-            async with timeout(config.heartbeat // 2):
+            async with timeout(self.heartbeat // 2):
                 async with self.session.get(url, headers=headers) as resp:
                     res = await resp.json()
         except ClientConnectorError:
