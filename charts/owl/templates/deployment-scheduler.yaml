@@ -63,6 +63,11 @@ spec:
           readinessProbe:
             tcpSocket:
               port: zmq
+          startupProbe:
+            tcpSocket:
+              port: http
+            failureThreshold: 30
+            periodSeconds: 10
           resources:
             {{- toYaml .Values.scheduler.resources | nindent 12 }}
       volumes:

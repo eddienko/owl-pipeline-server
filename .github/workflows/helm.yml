@@ -2,8 +2,8 @@ name: Helm Charts
 
 on:
   push:
-    tags:
-      - '*'
+    branches:
+      - main
 
 jobs:
   release:
