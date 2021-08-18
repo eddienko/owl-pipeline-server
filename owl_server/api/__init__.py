@@ -128,6 +128,7 @@ class PipeDef(BaseModel):
     name: str
     pdef: str
     extra_pip_packages: str
+    active: Optional[bool] = True
 
 
 @app.get("/api/pipeline/list/{status}")
@@ -293,7 +294,10 @@ async def delete_user(user: User, authentication=Header(None), username=None):
 async def add_pdef(pdef: PipeDef, authentication=Header(None), username=None):
     try:
         q = db.PipelineDefinition.insert().values(
-            name=pdef.name, pdef=pdef.pdef, extra_pip_packages=pdef.extra_pip_packages
+            name=pdef.name,
+            pdef=pdef.pdef,
+            extra_pip_packages=pdef.extra_pip_packages,
+            active=pdef.active,
         )
         await database.execute(q)
         action = "created"
@@ -301,7 +305,11 @@ async def add_pdef(pdef: PipeDef, authentication=Header(None), username=None):
         q = (
             db.PipelineDefinition.update()
             .where(db.PipelineDefinition.c.name == pdef.name)
-            .values(pdef=pdef.pdef, extra_pip_packages=pdef.extra_pip_packages)
+            .values(
+                pdef=pdef.pdef,
+                extra_pip_packages=pdef.extra_pip_packages,
+                active=pdef.active,
+            )
         )
         await database.execute(q)
         action = "updated"
