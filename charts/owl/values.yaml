@@ -18,6 +18,7 @@ loglevel: DEBUG
 dbi: sqlite:////var/run/owl/sqlite.db
 heartbeat: 30
 prometheus: ""
+token:
 
 serviceAccount:
   # Specifies whether a service account should be created
