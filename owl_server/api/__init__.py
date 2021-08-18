@@ -1,10 +1,14 @@
 import asyncio
 import functools
+import json
+import os
 import sqlite3
 from datetime import datetime
 from typing import Any, Dict, Optional
 
 import databases
+import zmq
+import zmq.asyncio
 from fastapi import FastAPI, Header, HTTPException, status
 from owl_server.config import config
 from pydantic import BaseModel
@@ -89,7 +93,20 @@ async def check_status(st):
     return st
 
 
+def AdminSocket():
+    host = os.environ.get("OWL_SCHEDULER_SERVICE_HOST")
+    port = os.environ.get("OWL_SCHEDULER_SERVICE_PORT_ADMIN")
+    admin_addr = f"tcp://{host}:{port}"
+    ctx = zmq.asyncio.Context()
+    admin_socket = ctx.socket(zmq.DEALER)
+    admin_socket.setsockopt(zmq.IDENTITY, config.token.encode("utf-8"))
+    admin_socket.connect(admin_addr)
+    return admin_socket
+
+
 app = FastAPI()
+
+admin_socket = AdminSocket()
 
 
 @app.on_event("startup")
@@ -129,6 +146,10 @@ class PipeDef(BaseModel):
     pdef: str
     extra_pip_packages: str
     active: Optional[bool] = True
+
+
+class AdminCommand(BaseModel):
+    cmd: Dict[str, Any]
 
 
 @app.get("/api/pipeline/list/{status}")
@@ -212,6 +233,16 @@ async def pipeline_update(
         await database.execute(q)
 
     return {"id": uid, "status": new, "user": res.user}
+
+
+@app.post("/api/admin/command")
+@authenticate(admin=True)
+async def admin_command(
+    command: AdminCommand, authentication=Header(None), username=None
+):
+    msg = json.dumps(command.cmd).encode("utf-8")
+    await admin_socket.send(msg)
+    return {"status": "message sent"}
 
 
 @app.post("/api/auth/login")
