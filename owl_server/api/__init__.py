@@ -74,6 +74,7 @@ async def check_config(config):
 async def check_status(st):
     await asyncio.sleep(0)
     if st not in [
+        "ALL",
         "PENDING",
         "STARTING",
         "RUNNING",
@@ -133,7 +134,14 @@ class PipeDef(BaseModel):
 @authenticate()
 async def pipeline_list(status: str, authentication=Header(None), username=None):
     st = await check_status(status.upper())
-    q = db.Pipeline.select().where(db.Pipeline.c.status == st)
+    q = db.Pipeline.select()
+    if st not in ["ALL"]:
+        q = q.where(db.Pipeline.c.status == st)
+    if username not in [OWL_USERNAME]:
+        try:
+            await check_admin(username)
+        except HTTPException:
+            q = q.where(db.Pipeline.c.user == username)
     res = await database.fetch_all(q)
     return res
 
