@@ -36,14 +36,16 @@ pvchome:
   storageClassName:
   storage: 10Gi
 
+extraEnv: {}
+
 scheduler:
   resources:
     limits:
-      cpu: 1
-      memory: 2G
+      cpu: 2
+      memory: 3G
     requests:
-      cpu: 1
-      memory: 2G
+      cpu: 2
+      memory: 3G
   affinity: {}
   nodeSelector: {}
   tolerations: []
@@ -51,11 +53,11 @@ scheduler:
 api:
   resources:
     limits:
-      cpu: 1
-      memory: 2G
+      cpu: 2
+      memory: 3G
     requests:
-      cpu: 1
-      memory: 2G
+      cpu: 2
+      memory: 3G
   affinity:
     podAffinity:
       requiredDuringSchedulingIgnoredDuringExecution:
@@ -82,16 +84,16 @@ dask: {}
 
 podAnnotations: {}
 
-podSecurityContext: {}
+podSecurityContext:
+  fsGroup: 1000
 
 securityContext:
-  {}
+  runAsNonRoot: true
+  runAsUser: 1000
+  runAsGroup: 1000
   # capabilities:
   #   drop:
   #   - ALL
-  # readOnlyRootFilesystem: true
-  # runAsNonRoot: true
-  # runAsUser: 1000
 
 service:
   type: ClusterIP

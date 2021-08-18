@@ -42,6 +42,9 @@ spec:
               value: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
             - name: LOGLEVEL
               value: "{{ .Values.loglevel }}"
+          {{- with .Values.extraEnv }}
+          {{- . | toYaml | trimSuffix "\n" | nindent 12 }}
+          {{- end }}
           volumeMounts:
             - mountPath: /var/run/owl
               name: owl-home
