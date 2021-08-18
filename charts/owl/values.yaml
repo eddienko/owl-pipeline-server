@@ -69,7 +69,13 @@ api:
   tolerations: []
 
 pipeline:
-  resources: {}
+  resources:
+    limits:
+      cpu: 2
+      memory: 7G
+    requests:
+      cpu: 2
+      memory: 7G
 
 dask: {}
 

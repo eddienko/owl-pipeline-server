@@ -29,12 +29,7 @@ data:
       securityContext:
         {{- toYaml .Values.securityContext | nindent 8 }}
       resources:
-        limits:
-          cpu: "1.75"
-          memory: "7G"
-        requests:
-          cpu: 1
-          memory: "7G"
+        {{- toYaml .Values.pipeline.resources | nindent 8 }}
       serviceAccountName: {{ include "owl.serviceAccountName" . }}
       volumeMounts:
         - name: dask-config
@@ -106,12 +101,7 @@ data:
                   {{- . | toYaml | trimSuffix "\n" | nindent 20 }}
                   {{- end }}
                   resources:
-                    limits:
-                      cpu: "1.75"
-                      memory: 7G
-                    requests:
-                      cpu: 1
-                      memory: 7G
+                    {{- toYaml .Values.pipeline.resources | nindent 20 }}
               volumes:
                 - name: dask-config
                   configMap:
