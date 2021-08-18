@@ -65,7 +65,7 @@ spec:
               port: zmq
           startupProbe:
             tcpSocket:
-              port: http
+              port: zmq
             failureThreshold: 30
             periodSeconds: 10
           resources:
