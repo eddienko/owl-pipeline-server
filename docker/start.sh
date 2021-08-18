@@ -3,7 +3,7 @@
 if [[ ! -z "${RUN_DEVELOP:-}" ]]; then
     pip install git+https://github.com/eddienko/owl-pipeline-server.git
 else
-    pip install owl-pipeline-server==new_version
+    pip install owl-pipeline-server==0.6.1
 fi
 
 if [[ ! -z "${EXTRA_PIP_PACKAGES:-}" ]]; then
