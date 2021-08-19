@@ -328,6 +328,16 @@ class Scheduler:
         self.live_router.bind(self.live_addr)
         self.logger.debug("Liveness probe address: %s", self.live_addr)
 
+    def _add_handler(self, uid):
+        logfile = f"/var/run/owl/logs/pipeline_{uid}.log"
+        handler = PipelineFileHandler(logfile)
+        formatter = self.logger.handlers[1].formatter
+        logfilter = LogFilter(topic="PIPELINE", jobid=f"{uid}")
+        handler.setFormatter(formatter)
+        handler.addFilter(logfilter)
+        self.logger.addHandler(handler)
+        return handler
+
     async def start_pipeline(self, pipe: Dict[str, Any]):
         """Start a pipeline.
 
@@ -388,24 +398,19 @@ class Scheduler:
         )
 
         heartbeat = {"status": "STARTING"}
+
+        handler = self._add_handler(uid)
+
         self.pipelines[uid] = {
             "last": time.monotonic(),
             "heartbeat": heartbeat,
             "job": status,
             "name": jobname,
+            "handler": handler
         }
         await self.update_pipeline(uid, heartbeat["status"])
 
         self._tasks.append(asyncio.create_task(self.heartbeat_pipeline(uid)))
-
-        # ************
-        logfile = f"/var/run/owl/logs/pipeline_{uid}.log"
-        handler = PipelineFileHandler(logfile)
-        formatter = self.logger.handlers[1].formatter
-        logfilter = LogFilter(topic="PIPELINE", jobid=f"{uid}")
-        handler.setFormatter(formatter)
-        handler.addFilter(logfilter)
-        self.logger.addHandler(handler)
 
         return status
 
@@ -431,6 +436,9 @@ class Scheduler:
         with suppress(Exception):
             jobname = self.pipelines[uid]["name"]
             await k8s.kube_delete_job(jobname, self.namespace)
+        with suppress(Exception):
+            handler = self.pipelines[uid]["handler"]
+            self.logger.removeHandler(handler)
         self.pipelines.pop(uid)
 
     @safe_loop()
