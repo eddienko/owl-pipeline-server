@@ -135,6 +135,7 @@ class User(BaseModel):
     username: str
     password: Optional[str] = None
     is_admin: Optional[bool] = False
+    active: Optional[bool] = True
 
 
 class Pipeline(BaseModel):
@@ -285,24 +286,23 @@ async def add_user(user: User, authentication=Header(None), username=None):
     password = hasher.encode(user.password, salt)
     try:
         q = db.User.insert().values(
-            username=user.username, password=password, is_admin=user.is_admin
+            username=user.username,
+            password=password,
+            is_admin=user.is_admin,
+            active=user.active,
         )
         await database.execute(q)
     except sqlite3.IntegrityError:
-        q = (
-            db.User.update()
-            .where(db.User.c.username == user.username)
-            .values(password=password, is_admin=user.is_admin)
+        raise HTTPException(
+            status_code=status.HTTP_208_ALREADY_REPORTED, detail="User already exists",
         )
-        await database.execute(q)
-
     return {"user": user.username}
 
 
 @app.post("/api/auth/user/update")
 @authenticate(admin=True)
 async def update_user(user: User, authentication=Header(None), username=None):
-    data = {"is_admin": user.is_admin}
+    data = {"is_admin": user.is_admin, "active": user.active}
     if user.password:
         hasher = PBKDF2PasswordHasher()
         salt = hasher.salt()
@@ -312,8 +312,9 @@ async def update_user(user: User, authentication=Header(None), username=None):
     q = db.User.update().where(db.User.c.username == user.username).values(**data)
     await database.execute(q)
 
-    q = db.Token.delete(db.Token.c.username == user.username)
-    await database.execute(q)
+    if "password" in data:
+        q = db.Token.delete(db.Token.c.username == user.username)
+        await database.execute(q)
 
     return {"user": user.username}
 
