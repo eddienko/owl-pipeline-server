@@ -3,6 +3,7 @@ import functools
 import json
 import os
 import sqlite3
+from contextlib import suppress
 from datetime import datetime
 from typing import Any, Dict, Optional
 
@@ -265,6 +266,15 @@ async def login(user: User):
         )
         await database.execute(q)
     return {"token": token}
+
+
+@app.post("/api/auth/logout")
+@authenticate()
+async def logout(user: User, authentication=Header(None), username=None):
+    q = db.Token.delete().where(db.Token.c.username == username)
+    with suppress(Exception):
+        await database.execute(q)
+    return {"user": user.username}
 
 
 @app.post("/api/auth/user/add")
