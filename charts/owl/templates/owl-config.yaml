@@ -36,6 +36,10 @@ data:
       resources:
         {{- toYaml .Values.pipeline.resources | nindent 8 }}
       serviceAccountName: {{ include "owl.serviceAccountName" . }}
+      extraEnv:
+      {{- with .Values.extraEnv }}
+      {{- . | toYaml | trimSuffix "\n" | nindent 8 }}
+      {{- end }}
       volumeMounts:
         - name: dask-config
           mountPath: /etc/dask
@@ -96,6 +100,9 @@ data:
                       value: ${LOGLEVEL}
                     - name: JOBID
                       value: ${JOBID}
+                  {{- with .Values.extraEnv }}
+                  {{- . | toYaml | trimSuffix "\n" | nindent 20 }}
+                  {{- end }}
                   volumeMounts:
                     - name: dask-config
                       mountPath: /etc/dask
@@ -155,6 +162,9 @@ data:
                       value: ${LOGLEVEL}
                     - name: JOBID
                       value: ${JOBID}
+                  {{- with .Values.extraEnv }}
+                  {{- . | toYaml | trimSuffix "\n" | nindent 20 }}
+                  {{- end }}
                   volumeMounts:
                     - name: dask-config
                       mountPath: /etc/dask
