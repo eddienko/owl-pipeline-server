@@ -471,9 +471,12 @@ class Scheduler:
 
     @safe_loop()
     async def admin_commands(self):
+        """Receive and execute administrative commands.
+        """
         token, msg = await self.admin_router.recv_multipart()
         token, msg = token.decode(), json.loads(msg.decode())
         self.logger.debug("Received administrative command %s", msg)
+        # In maintenance mode no new pipelines are scheduled
         if "maintenance" in msg:
             fname = Path("/var/run/owl/nopipe")
             if msg["maintenance"] == "on":
@@ -482,6 +485,7 @@ class Scheduler:
             elif msg["maintenance"] == "off":
                 fname.unlink(missing_ok=True)
                 self.logger.info("Setting maintenance mode OFF")
+        # Limit maximum number of pipelines that can be run at the same time
         elif "maxpipe" in msg:
             fname = Path("/var/run/owl/maxpipe")
             try:
@@ -495,6 +499,7 @@ class Scheduler:
             else:
                 fname.unlink(missing_ok=True)
                 self.logger.info("Removing maximum pipelines constrain")
+        # Configure heartbeat
         elif "heartbeat" in msg:
             try:
                 heartbeat = int(msg["heartbeat"])
