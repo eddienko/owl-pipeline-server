@@ -1,9 +1,6 @@
 name: Helm Charts
 
-on:
-  push:
-    branches:
-      - main
+on: [push]
 
 jobs:
   release:
@@ -30,3 +27,4 @@ jobs:
           charts_dir: charts
         env:
           CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+          CR_SKIP_EXISTING: "true"
