@@ -24,7 +24,7 @@ RUN conda install -y -c conda-forge \
 COPY requirements.txt requirements.txt
 RUN pip install -r requirements.txt
 
-COPY start.sh /usr/local/bin/start.sh
+COPY ./docker/start.sh /usr/local/bin/start.sh
 RUN chmod a+rx /usr/local/bin/start.sh
 
 RUN addgroup --gid 1000 user && \
