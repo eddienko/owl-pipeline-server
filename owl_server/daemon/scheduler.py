@@ -513,7 +513,17 @@ class Scheduler:
             else:
                 self.heartbeat = config.heartbeat
             self.logger.info("Setting heartbeat to %s seconds", self.heartbeat)
-        
+        # Cancel pipeline
+        elif "stop_pipeline" in msg:
+            try:
+                uid = int(msg["jobid"])
+                status = "CANCELLED"
+            except Exception:
+                return
+            if uid in self.pipelines:
+                await self.stop_pipeline(uid, status)
+            else:
+                await self.update_pipeline(uid, status)
 
     @safe_loop()
     async def clean_pipelines(self):
