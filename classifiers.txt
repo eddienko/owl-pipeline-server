@@ -4,4 +4,6 @@ Intended Audience :: Science/Research
 Operating System :: OS Independent
 Topic :: System :: Distributed Computing
 License :: OSI Approved :: GNU General Public License v3 (GPLv3)
-Programming Language :: Python :: 3.7
+Programming Language :: Python :: 3.8
+Programming Language :: Python :: 3.9
+Programming Language :: Python :: 3.10
