@@ -1,17 +1,11 @@
-import ast
-import base64
-import builtins
-import json
 import os
-import re
 import sys
 import threading
-import warnings
 from collections.abc import Mapping
 
 import yaml
 
-from . import utils
+from . import utils  # noqa: F401
 from .schema import AttrDict, schema_server
 
 paths = [

@@ -180,5 +180,3 @@ class Pipeline:
         self.info["version"] = self.func.__version__
         self.logger.debug("Checking pipeline schema")
         self.func.schema(self.pdef)
-
-        

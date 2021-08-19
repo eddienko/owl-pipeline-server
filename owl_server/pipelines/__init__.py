@@ -1,12 +1,11 @@
 import logging
 import os
 import shutil
-import sys
 import traceback
 from contextlib import suppress
 from functools import wraps
 from pathlib import Path
-from typing import Callable, Dict, Optional
+from typing import Callable, Dict
 
 import pkg_resources
 import voluptuous as vo
@@ -17,7 +16,7 @@ from owl_server.plugins import LoggingPlugin
 
 logger = logging.getLogger("owl.daemon.scheduler")
 
-PIPELINES = dict()
+PIPELINES = {}
 
 
 def _import_pipelines():

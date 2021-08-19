@@ -2,7 +2,6 @@ import base64
 import hashlib
 import math
 import secrets
-import warnings
 
 RANDOM_STRING_CHARS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 
@@ -138,4 +137,3 @@ class PBKDF2PasswordHasher(BasePasswordHasher):
         decoded = self.decode(encoded)
         encoded_2 = self.encode(password, decoded["salt"], decoded["iterations"])
         return constant_time_compare(encoded, encoded_2)
-

@@ -75,4 +75,3 @@ def _make_spec_from_dict(_dict: Dict, kind=client.V1Pod):
     return SERIALIZATION_API_CLIENT.deserialize(
         _FakeResponse(data=json.dumps(_dict)), kind
     )
-

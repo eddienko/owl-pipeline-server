@@ -1,7 +1,7 @@
 """Initial revision
 
 Revision ID: 20210804
-Revises: 
+Revises:
 Create Date: 2021-08-04 15:20:27.231408
 
 """

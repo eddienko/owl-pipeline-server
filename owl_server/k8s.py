@@ -1,16 +1,9 @@
-import hashlib
 import logging
-import os
 import random
 import string
-import sys
-import time
 
-import yaml
-from kubernetes_asyncio import client, config, utils
+from kubernetes_asyncio import client, config
 from kubernetes_asyncio.client.api_client import ApiClient
-from kubernetes_asyncio.client.models.v1_persistent_volume_claim import \
-    V1PersistentVolumeClaim
 from kubernetes_asyncio.client.rest import ApiException
 from kubernetes_asyncio.config.config_exception import \
     ConfigException  # noqa: F401
@@ -67,71 +60,6 @@ def kube_delete_empty_pods(namespace=None, phase=None):
                 "Exception when calling CoreV1Api->delete_namespaced_pod: %s\n" % e
             )
 
-    return
-
-
-def kube_cleanup_finished_jobs(namespace=None, state=None):
-    """
-    Since the TTL flag (ttl_seconds_after_finished) is still in alpha (Kubernetes 1.12) jobs need to be cleanup manually
-    As such this method checks for existing Finished Jobs and deletes them.
-    By default it only cleans Finished jobs. Failed jobs require manual intervention or a second call to this function.
-    Docs: https://kubernetes.io/docs/concepts/workloads/controllers/jobs-run-to-completion/#clean-up-finished-jobs-automatically
-    For deletion you need a new object type! V1DeleteOptions! But you can have it empty!
-    CAUTION: Pods are not deleted at the moment. They are set to not running, but will count for your autoscaling limit, so if
-             pods are not deleted, the cluster can hit the autoscaling limit even with free, idling pods.
-             To delete pods, at this moment the best choice is to use the kubectl tool
-             ex: kubectl delete jobs/JOBNAME.
-             But! If you already deleted the job via this API call, you now need to delete the Pod using Kubectl:
-             ex: kubectl delete pods/PODNAME
-    """
-    # deleteoptions = client.V1DeleteOptions()
-    namespace = namespace or "default"
-    state = state or "Finished"
-    try:
-        jobs = api_instance.list_namespaced_job(
-            namespace, pretty=True, timeout_seconds=60
-        )
-        # print(jobs)
-    except ApiException as e:
-        print("Exception when calling BatchV1Api->list_namespaced_job: %s\n" % e)
-
-    # Now we have all the jobs, lets clean up
-    # We are also logging the jobs we didn't clean up because they either failed or are still running
-    for job in jobs.items:
-        logging.debug(job)
-        jobname = job.metadata.name
-        jobstatus = job.status.conditions
-        if job.status.succeeded == 1:
-            # Clean up Job
-            logging.info(
-                "Cleaning up Job: {}. Finished at: {}".format(
-                    jobname, job.status.completion_time
-                )
-            )
-            try:
-                # What is at work here. Setting Grace Period to 0 means delete ASAP. Otherwise it defaults to
-                # some value I can't find anywhere. Propagation policy makes the Garbage cleaning Async
-                api_response = api_instance.delete_namespaced_job(
-                    jobname,
-                    namespace,
-                    grace_period_seconds=0,
-                    propagation_policy="Background",
-                )
-                logging.debug(api_response)
-            except ApiException as e:
-                print(
-                    "Exception when calling BatchV1Api->delete_namespaced_job: %s\n" % e
-                )
-        else:
-            if jobstatus is None and job.status.active == 1:
-                jobstatus = "active"
-            logging.info(
-                "Job: {} not cleaned up. Current status: {}".format(jobname, jobstatus)
-            )
-
-    # Now that we have the jobs cleaned, let's clean the pods
-    # kube_delete_empty_pods(namespace)
-    # And we are done!
     return
 
 

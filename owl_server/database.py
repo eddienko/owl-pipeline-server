@@ -1,5 +1,3 @@
-from enum import unique
-
 import sqlalchemy
 
 metadata = sqlalchemy.MetaData()

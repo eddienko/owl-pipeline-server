@@ -472,6 +472,37 @@ class Scheduler:
         )
         await self.update_pipeline(uid, msg["status"])
 
+    def _set_maintance(self, value):
+        fname = Path("/var/run/owl/nopipe")
+        if value == "on":
+            fname.touch()
+            self.logger.info("Setting maintenance mode ON")
+        elif value == "off":
+            fname.unlink(missing_ok=True)
+            self.logger.info("Setting maintenance mode OFF")
+
+    def _set_maxpipe(self, value):
+        fname = Path("/var/run/owl/maxpipe")
+        try:
+            maxpipe = int(value)
+        except Exception:
+            return
+        if maxpipe > 0:
+            with fname.open("w") as fh:
+                fh.write(f"{maxpipe}")
+            self.logger.info("Setting maximum pipelines to %s", maxpipe)
+        else:
+            fname.unlink(missing_ok=True)
+            self.logger.info("Removing maximum pipelines constrain")
+
+    def _set_heartbeat(self, value):
+        try:
+            heartbeat = int(value)
+        except Exception:
+            return
+        self.heartbeat = heartbeat if heartbeat > 0 else config.heartbeat
+        self.logger.info("Setting heartbeat to %s seconds", self.heartbeat)
+
     @safe_loop()
     async def admin_commands(self):
         """Receive and execute administrative commands.
@@ -481,38 +512,13 @@ class Scheduler:
         self.logger.debug("Received administrative command %s", msg)
         # In maintenance mode no new pipelines are scheduled
         if "maintenance" in msg:
-            fname = Path("/var/run/owl/nopipe")
-            if msg["maintenance"] == "on":
-                fname.touch()
-                self.logger.info("Setting maintenance mode ON")
-            elif msg["maintenance"] == "off":
-                fname.unlink(missing_ok=True)
-                self.logger.info("Setting maintenance mode OFF")
+            self._set_maintance(msg["maintenance"])
         # Limit maximum number of pipelines that can be run at the same time
         elif "maxpipe" in msg:
-            fname = Path("/var/run/owl/maxpipe")
-            try:
-                maxpipe = int(msg["maxpipe"])
-            except Exception:
-                return
-            if maxpipe > 0:
-                with fname.open("w") as fh:
-                    fh.write(f"{maxpipe}")
-                self.logger.info("Setting maximum pipelines to %s", maxpipe)
-            else:
-                fname.unlink(missing_ok=True)
-                self.logger.info("Removing maximum pipelines constrain")
+            self._set_maxpipe(msg["maxpipe"])
         # Configure heartbeat
         elif "heartbeat" in msg:
-            try:
-                heartbeat = int(msg["heartbeat"])
-            except Exception:
-                return
-            if heartbeat > 0:
-                self.heartbeat = heartbeat
-            else:
-                self.heartbeat = config.heartbeat
-            self.logger.info("Setting heartbeat to %s seconds", self.heartbeat)
+            self._set_heartbeat(msg["heartbeat"])
         # Cancel pipeline
         elif "stop_pipeline" in msg:
             try:

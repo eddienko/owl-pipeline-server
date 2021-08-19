@@ -5,7 +5,7 @@ import signal
 from argparse import Namespace
 from pathlib import Path
 
-from owl_server.config import config
+from owl_server.config import config  # noqa: F401
 from owl_server.daemon import Scheduler
 from owl_server.log import initlog
 

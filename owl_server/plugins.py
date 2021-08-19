@@ -9,4 +9,3 @@ class LoggingPlugin(WorkerPlugin):
         import logging.config
 
         logging.config.dictConfig(self.config)
-
