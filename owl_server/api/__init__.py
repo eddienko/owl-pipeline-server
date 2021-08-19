@@ -318,6 +318,19 @@ async def update_user(user: User, authentication=Header(None), username=None):
     return {"user": user.username}
 
 
+@app.get("/api/auth/user/get/{user}")
+@authenticate(admin=True)
+async def get_user(user: str, authentication=Header(None), username=None):
+    q = db.User.select()
+    if user != "0":
+        q = q.where(db.User.c.username == user)
+    res = await database.fetch_all(q)
+    # remove password
+    resd = [dict(r) for r in res]
+    [r.pop("password", None) for r in resd]
+    return resd
+
+
 @app.post("/api/auth/user/delete")
 @authenticate(admin=True)
 async def delete_user(user: User, authentication=Header(None), username=None):
