@@ -9,7 +9,6 @@ on:
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -26,6 +25,6 @@ jobs:
           python -m pip install --upgrade pip
           pip install flake8 pytest
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-     - name: Lint with flake8
-       run: |
-         flake8 owl_server
+      - name: Lint with flake8
+        run: |
+          flake8 owl_server
