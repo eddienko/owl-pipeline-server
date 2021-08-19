@@ -264,7 +264,7 @@ class Scheduler:
         # is restarted. Save the status to a file and load it again.
         self.logger.debug("Stopping scheduler")
         if self.is_started:
-            for uid in self.pipelines:
+            for uid in list(self.pipelines):
                 await self.stop_pipeline(uid, "PENDING")
             # self.logger.info("Saving pipelines status")
             # with open("/var/run/owl/pipelines.pkl", "w") as fh:
