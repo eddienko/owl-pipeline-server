@@ -319,6 +319,28 @@ async def update_user(user: User, authentication=Header(None), username=None):
     return {"user": user.username}
 
 
+@app.post("/api/auth/change_password")
+@authenticate()
+async def change_password(user: User, authentication=Header(None), username=None):
+    if not user.password:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Password not supplied",
+        )
+
+    hasher = PBKDF2PasswordHasher()
+    salt = hasher.salt()
+    password = hasher.encode(user.password, salt)
+    data = {"password": password}
+
+    q = db.User.update().where(db.User.c.username == username).values(**data)
+    await database.execute(q)
+
+    q = db.Token.delete(db.Token.c.username == username)
+    await database.execute(q)
+
+    return {"user": user.username}
+
+
 @app.get("/api/auth/user/get/{user}")
 @authenticate(admin=True)
 async def get_user(user: str, authentication=Header(None), username=None):
