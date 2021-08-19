@@ -385,6 +385,9 @@ class Scheduler:
             "NUMEXPR_MAX_THREADS": "1",
         }
 
+        extra = config.pipeline.extraEnv or {}
+        [env_vars.update({d["name"]: d["value"]}) for d in extra]
+
         jobname = f"pipeline-{uid}"
         self.logger.debug("Creating job %s", jobname)
         status = await k8s.kube_create_job(
