@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: owlcli
+spec:
+  containers:
+  - name: owlcli
+    image: imaxt/owl-server:0.6.1
+    args: ["/bin/bash", "-c", "trap : TERM INT; sleep infinity & wait"]
+    imagePullPolicy: IfNotPresent
+  restartPolicy: Always

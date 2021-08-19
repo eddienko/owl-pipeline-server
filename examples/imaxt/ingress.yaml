@@ -1,0 +1,25 @@
+kind: Middleware
+metadata:
+  name: stripprefix
+  namespace: owl
+spec:
+  stripPrefix:
+    prefixes:
+      - /owl
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: owl-api
+  namespace: owl
+spec:
+  routes:
+    - kind: Rule
+      match: Host(`imaxt.ast.cam.ac.uk`) && PathPrefix(`/owl`)
+      priority: 10
+      services:
+        - name: owl-api
+          port: 8002
+      middlewares:
+        - name: stripprefix
+          namespace: owl
