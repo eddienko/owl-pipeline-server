@@ -76,6 +76,7 @@
     
         $ mkvirtualenv owl-pipeline-server
         $ cd owl-pipeline-server/
+        $ pip install -r requirements_dev.txt
         $ python setup.py develop
     
     4. Create a branch for local development::
