@@ -1,8 +1,8 @@
 image:
   repository: imaxt/owl-server
-  pullPolicy: Always
+  pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
-  tag: "0.6.1"
+  # tag: "0.7.1"
 
 serviceAccount:
   create: true
@@ -10,10 +10,10 @@ serviceAccount:
 loglevel: DEBUG
 dbi: sqlite:////var/run/owl/sqlite.db
 token: 8bgJcJEVc0QjP91beuVC5HFGea4p2ZBr
+# Takes care of slow start in GKE with small number of resources
 heartbeat: 60
 # prometheus: http://prometheus-kube-prometheus-prometheus.monitoring:9090
 
-# Default image runs as user and group ids 1000
 securityContext:
   runAsNonRoot: true
   runAsUser: 1000
@@ -22,33 +22,31 @@ securityContext:
 podSecurityContext:
   fsGroup: 1000
 
-# The resources here are for a free GCE account with very limited resources
-# Increase (or leave empty for defaults) for a production environment
 pipeline:
   resources:
     limits:
-      cpu: 100m
+      cpu: 500m
       memory: 500M
     requests:
-      cpu: 100m
+      cpu: 500m
       memory: 500M
 
 scheduler:
   resources:
     limits:
-      cpu: 100m
+      cpu: 500m
       memory: 500M
     requests:
-      cpu: 100m
+      cpu: 500m
       memory: 500M
 
 api:
   resources:
     limits:
-      cpu: 100m
+      cpu: 500m
       memory: 500M
     requests:
-      cpu: 100m
+      cpu: 500m
       memory: 500M
 
 dask: {}
