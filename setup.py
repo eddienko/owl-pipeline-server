@@ -13,6 +13,11 @@ setup_requirements = ["pytest-runner", "flake8"]
 
 test_requirements = ["coverage", "pytest", "pytest-cov", "pytest-mock"]
 
+project_urls = {
+  'Documentation': 'https://eddienko.github.io/owl-pipeline/',
+  'Tracker': 'https://github.com/eddienko/owl-pipeline-server/issues',
+}
+
 setup(
     author="Eduardo Gonzalez Solares",
     author_email="e.gonzalezsolares@gmail.com",
@@ -34,6 +39,7 @@ setup(
     test_suite="tests",
     tests_require=test_requirements,
     url="https://github.com/eddienko/owl-pipeline-server",
+    project_urls=project_urls,
     version="0.7.0",
     zip_safe=False,
     python_requires=">=3.8",
