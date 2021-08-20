@@ -357,6 +357,10 @@ class Scheduler:
             )
             raise Exception("Fingerprint failed")
 
+        if not pdef["active"]:
+            self.logger.error("Pipeline found but not active %s", config["name"])
+            raise Exception("Fingerprint failed")
+
         # TODO: check that resources requested can be allocated
 
         self.logger.debug("Starting pipeline ID %s", uid)
