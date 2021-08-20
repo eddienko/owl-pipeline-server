@@ -18,7 +18,7 @@ RUN echo "en_US.UTF-8 UTF-8" > /etc/locale.gen && \
 
 RUN conda install -y -c conda-forge \
     numpy numcodecs blosc lz4 nomkl cytoolz python-blosc pandas \
-    psycopg2 ipython tini && \
+    psycopg2 ipython tini bokeh && \
     conda clean --all -f -y
 
 COPY requirements.txt requirements.txt
