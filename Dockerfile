@@ -11,6 +11,7 @@ RUN apt-get update \
     git \
     libc6-dev \
     vim \
+    curl \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 RUN echo "en_US.UTF-8 UTF-8" > /etc/locale.gen && \
