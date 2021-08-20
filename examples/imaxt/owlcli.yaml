@@ -8,4 +8,7 @@ spec:
     image: imaxt/owl-server:0.6.1
     args: ["/bin/bash", "-c", "trap : TERM INT; sleep infinity & wait"]
     imagePullPolicy: IfNotPresent
+    env:
+      - name: EXTRA_PIP_PACKAGES
+        value: owl-pipeline-client
   restartPolicy: Always
