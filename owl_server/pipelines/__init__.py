@@ -12,7 +12,7 @@ import voluptuous as vo
 import yaml
 from distributed import Client
 from owl_server.log import logconf
-from owl_server.plugins import LoggingPlugin
+from owl_server.plugins import LoggingPlugin, ProcessPoolPlugin
 
 logger = logging.getLogger("owl.daemon.scheduler")
 
@@ -57,8 +57,8 @@ class register_pipeline:
                         "Error occurred. Original traceback " "is\n%s\n" % traceback_str
                     )
                 c = yaml.safe_load(logconf["pipeline"])
-                plugin = LoggingPlugin(c)
-                client.register_worker_plugin(plugin)
+                client.register_worker_plugin(LoggingPlugin(c))
+                client.register_worker_plugin(ProcessPoolPlugin)
             else:
                 client = None
             try:

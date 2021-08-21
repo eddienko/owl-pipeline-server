@@ -1,4 +1,7 @@
 from distributed import WorkerPlugin
+from loky import ProcessPoolExecutor
+
+# from concurrent.futures import ProcessPoolExecutor
 
 
 class LoggingPlugin(WorkerPlugin):
@@ -9,3 +12,9 @@ class LoggingPlugin(WorkerPlugin):
         import logging.config
 
         logging.config.dictConfig(self.config)
+
+
+class ProcessPoolPlugin(WorkerPlugin):
+    def setup(self, worker):
+        executor = ProcessPoolExecutor(max_workers=worker.nthreads)
+        worker.executors["processes"] = executor
