@@ -42,7 +42,7 @@ def authenticate(admin=False):
 async def check_token(username, token) -> bool:
     q = db.Token.select().where(db.Token.c.username == username)
     res = await database.fetch_one(q)
-    if (not res) or (res.token != token):
+    if (not res) or (res["token"] != token):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized",
         )
@@ -54,13 +54,13 @@ async def check_password(user) -> bool:
     if not res:
         return False
     hasher = PBKDF2PasswordHasher()
-    return hasher.verify(user.password, res.password)
+    return hasher.verify(user.password, res["password"])
 
 
 async def check_admin(username) -> bool:
     q = db.User.select().where(db.User.c.username == username)
     res = await database.fetch_one(q)
-    if (not res) or (res.is_admin is False):
+    if (not res) or (res["is_admin"] is False):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized",
         )
@@ -198,10 +198,10 @@ async def pipeline_add(pipe: Pipeline, authentication=Header(None), username=Non
 async def pipeline_cancel(uid: int, authentication=Header(None), username=None):
     q = db.Pipeline.select().where(db.Pipeline.c.id == uid)
     res = await database.fetch_one(q)
-    if res.user != username:
+    if res["user"] != username:
         q = db.User.select().where(db.User.c.username == username)
         res = await database.fetch_one(q)
-        if not res.is_admin:
+        if not res["is_admin"]:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized",
             )
@@ -222,18 +222,18 @@ async def pipeline_update(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail=f"Pipeline {uid} not found",
         )
-    if username not in [OWL_USERNAME, res.user]:
+    if username not in [OWL_USERNAME, res["user"]]:
         await check_admin(username)
     update = False
-    if (res.status in ["TO_CANCEL"]) and (new == "CANCELLED"):
+    if (res["status"] in ["TO_CANCEL"]) and (new == "CANCELLED"):
         update = True
-    elif res.status not in ["TO_CANCEL"]:
+    elif res["status"] not in ["TO_CANCEL"]:
         update = True
     if update:
         q = db.Pipeline.update().where(db.Pipeline.c.id == uid).values(status=new)
         await database.execute(q)
 
-    return {"id": uid, "status": new, "user": res.user}
+    return {"id": uid, "status": new, "user": res["user"]}
 
 
 @app.post("/api/admin/command")
