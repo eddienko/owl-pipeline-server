@@ -96,6 +96,10 @@ data:
                       value: 1
                     - name: NUMEXPR_MAX_THREADS
                       value: 1
+                    - name: BLOSC_NOLOCK
+                      value: 1
+                    - name: BLOSC_NTHREADS
+                      value: 1
                     - name: LOGLEVEL
                       value: ${LOGLEVEL}
                     - name: JOBID
@@ -157,6 +161,10 @@ data:
                     - name: NUMEXPR_NUM_THREADS
                       value: 1
                     - name: NUMEXPR_MAX_THREADS
+                      value: 1
+                    - name: BLOSC_NOLOCK
+                      value: 1
+                    - name: BLOSC_NTHREADS
                       value: 1
                     - name: LOGLEVEL
                       value: ${LOGLEVEL}

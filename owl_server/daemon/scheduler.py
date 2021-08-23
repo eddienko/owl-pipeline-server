@@ -387,6 +387,8 @@ class Scheduler:
             "VECLIB_MAXIMUM_THREADS": "1",
             "NUMEXPR_NUM_THREADS": "1",
             "NUMEXPR_MAX_THREADS": "1",
+            "BLOSC_NOLOCK": "1",
+            "BLOSC_NTHREADS": "1",
         }
 
         extra = config.pipeline.extraEnv or {}
