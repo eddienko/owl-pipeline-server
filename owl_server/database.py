@@ -49,11 +49,11 @@ Token = sqlalchemy.Table(
 )
 
 User = sqlalchemy.Table(
-    "user",
+    "owl_user",
     metadata,
     sqlalchemy.Column("id", sqlalchemy.Integer, primary_key=True),
     sqlalchemy.Column("username", sqlalchemy.String(length=32), unique=True),
-    sqlalchemy.Column("password", sqlalchemy.String(length=32)),
+    sqlalchemy.Column("password", sqlalchemy.String(length=128)),
     sqlalchemy.Column("is_admin", sqlalchemy.Boolean, default=False),
     sqlalchemy.Column("active", sqlalchemy.Boolean, default=True),
 )
