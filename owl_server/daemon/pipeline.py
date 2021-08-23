@@ -3,6 +3,7 @@ import concurrent.futures
 import json
 import logging
 import os
+import sys
 import time
 from contextlib import suppress
 
@@ -54,9 +55,10 @@ class Pipeline:
         self._tasks = []
         self.is_started = False
         self.status = "STARTING"
+        self._watch = time.monotonic()
+
         self.loop = asyncio.get_event_loop()
         self.loop.run_until_complete(self.start())
-        self._watch = time.monotonic()
 
     @property
     def elapsed(self):
@@ -154,17 +156,26 @@ class Pipeline:
 
     @safe_loop()
     async def heartbeat(self):
-        msg = await self.pipe_socket.recv()
+        await self.pipe_socket.recv()
         self.logger.info("Pipeline %s: heartbeat received", self.uid)
         msg = {
             "status": self.status,
-            "scheduler_address": self.cluster.scheduler_address,
-            "dask": dict(self.cluster.scheduler.worker_info),
             "started": self.info["started"],
             "elapsed": self.elapsed,
             "version": self.info["version"],
             "last_heartbeat": time.time(),
         }
+
+        with suppress(Exception):
+            msg.update(
+                {
+                    "dask_scheduler": {
+                        "address": self.cluster.scheduler_address,
+                        "info": self.cluster.scheduler_info,
+                    }
+                }
+            )
+
         await self.pipe_socket.send(json.dumps(msg).encode("utf-8"))
 
         if self.status not in ["PENDING", "RUNNING"]:
