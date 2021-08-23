@@ -3,6 +3,7 @@ import concurrent.futures
 import json
 import logging
 import os
+import time
 from contextlib import suppress
 
 import zmq
@@ -49,12 +50,17 @@ class Pipeline:
         self.executor = concurrent.futures.ThreadPoolExecutor(max_workers=3)
         self.pdef = pdef
         self.name = self.pdef["name"]
-        self.info = {}
+        self.info = {"started": time.time()}
         self._tasks = []
         self.is_started = False
         self.status = "STARTING"
         self.loop = asyncio.get_event_loop()
         self.loop.run_until_complete(self.start())
+        self._watch = time.monotonic()
+
+    @property
+    def elapsed(self):
+        return time.monotonic() - self._watch
 
     async def start(self):
         self.logger.info("Starting pipeline ID %s with %s", self.uid, self.pdef)
@@ -87,7 +93,7 @@ class Pipeline:
 
     def pipeline_done(self, future: asyncio.Future):
         self.logger.info("Pipeline ID %s finished", self.uid)
-        if (e := future.exception()):
+        if e := future.exception():
             self.logger.critical("Failed to run pipeline %s", e)
             self.status = "ERROR"
         else:
@@ -103,10 +109,10 @@ class Pipeline:
 
     def dask_config(self):
         resources = self.pdef["resources"]
-        worker = config.dask.kubernetes['worker-template']['spec']['containers'][0]
-        nthreads = resources['threads']
-        nprocs = resources['processes']
-        memory = resources['memory']
+        worker = config.dask.kubernetes["worker-template"]["spec"]["containers"][0]
+        nthreads = resources["threads"]
+        nprocs = resources["processes"]
+        memory = resources["memory"]
         args = [
             "dask-worker",
             "--nthreads",
@@ -150,7 +156,15 @@ class Pipeline:
     async def heartbeat(self):
         msg = await self.pipe_socket.recv()
         self.logger.info("Pipeline %s: heartbeat received", self.uid)
-        msg = {"status": self.status}
+        msg = {
+            "status": self.status,
+            "scheduler_address": self.cluster.scheduler_address,
+            "dask": dict(self.cluster.scheduler.worker_info),
+            "started": self.info["started"],
+            "elapsed": self.elapsed,
+            "version": self.info["version"],
+            "last_heartbeat": time.time(),
+        }
         await self.pipe_socket.send(json.dumps(msg).encode("utf-8"))
 
         if self.status not in ["PENDING", "RUNNING"]:
