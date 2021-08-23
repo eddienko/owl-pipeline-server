@@ -460,12 +460,9 @@ class Scheduler:
         """
         if uid not in self.pipelines:
             return True
-        if not self.pipelines[uid].get("received", True):
-            self.logger.debug("Waiting for heartbeat from pipeline %s", uid)
-            return
+
         self.logger.debug("Sending heartbeat to pipeline %s", uid)
         await self.pipe_router.send_multipart([str(uid).encode("utf-8"), b"heartbeat"])
-        self.pipelines[uid]["received"] = "False"
         await asyncio.sleep(self.heartbeat)
 
     @safe_loop()
@@ -474,7 +471,7 @@ class Scheduler:
         uid, msg = int(uid.decode()), json.loads(msg.decode())
         self.logger.debug("Received heartbeat from pipeline %s : %s", uid, msg)
         self.pipelines[uid].update(
-            {"last": time.monotonic(), "heartbeat": msg, "received": True}
+            {"last": time.monotonic(), "heartbeat": msg}
         )
         await self.update_pipeline(uid, msg["status"])
 
