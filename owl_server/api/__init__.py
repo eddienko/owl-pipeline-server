@@ -2,7 +2,6 @@ import asyncio
 import functools
 import json
 import os
-import sqlite3
 from contextlib import suppress
 from datetime import datetime
 from typing import Any, Dict, Optional
@@ -117,7 +116,7 @@ async def startup():
     try:
         q = db.Token.insert().values(username=OWL_USERNAME, token=token)
         await database.execute(q)
-    except sqlite3.IntegrityError:
+    except Exception:
         q = (
             db.Token.update()
             .where(db.Token.c.username == OWL_USERNAME)
@@ -259,7 +258,7 @@ async def login(user: User):
     try:
         q = db.Token.insert().values(username=user.username, token=token)
         await database.execute(q)
-    except sqlite3.IntegrityError:
+    except Exception:
         q = (
             db.Token.update()
             .where(db.Token.c.username == user.username)
@@ -292,7 +291,7 @@ async def add_user(user: User, authentication=Header(None), username=None):
             active=user.active,
         )
         await database.execute(q)
-    except sqlite3.IntegrityError:
+    except Exception:
         raise HTTPException(
             status_code=status.HTTP_208_ALREADY_REPORTED, detail="User already exists",
         )
@@ -378,7 +377,7 @@ async def add_pdef(pdef: PipeDef, authentication=Header(None), username=None):
         )
         await database.execute(q)
         action = "created"
-    except sqlite3.IntegrityError:
+    except Exception:
         q = (
             db.PipelineDefinition.update()
             .where(db.PipelineDefinition.c.name == pdef.name)
