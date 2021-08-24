@@ -81,7 +81,10 @@ pipeline:
       cpu: 2
       memory: 7G
 
-dask: {}
+dask:
+  distributed:
+    worker:
+      daemon: false
 
 podAnnotations: {}
 
