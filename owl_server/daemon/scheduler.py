@@ -1,6 +1,7 @@
 import asyncio
 import json
 import logging
+import os
 import time
 from contextlib import suppress
 from pathlib import Path
@@ -12,7 +13,7 @@ import zmq.asyncio
 from aiohttp.client_exceptions import ClientConnectorError
 from async_timeout import timeout
 from owl_server import k8s
-from owl_server.config import config
+from owl_server.config import config, refresh
 from owl_server.log import LogFilter, PipelineFileHandler
 
 from .utils import safe_loop
@@ -395,6 +396,12 @@ class Scheduler:
         [env_vars.update({d["name"]: d["value"]}) for d in extra]
 
         jobname = f"pipeline-{uid}"
+
+        # Reload global config replacing USER
+        # This works because we run in one thread and we do not await until used
+        os.environ.update({"USER": user})
+        refresh()
+
         self.logger.debug("Creating job %s", jobname)
         status = await k8s.kube_create_job(
             jobname,
