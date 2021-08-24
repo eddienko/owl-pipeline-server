@@ -23,4 +23,6 @@ jobs:
         uses: docker/build-push-action@v2
         with:
           push: true
-          tags: imaxt/owl-server:0.7.1
+          tags: |
+            imaxt/owl-server:0.7.1
+            imaxt/owl-server:latest
