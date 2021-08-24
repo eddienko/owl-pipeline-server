@@ -12,14 +12,16 @@ RUN apt-get update \
     libc6-dev \
     vim \
     curl \
+    make \
+    zlib1g-dev libbz2-dev liblzma-dev libssl-dev libcurl4-openssl-dev\
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 RUN echo "en_US.UTF-8 UTF-8" > /etc/locale.gen && \
     locale-gen
 
 RUN conda install -y -c conda-forge \
-    numpy numcodecs blosc lz4 nomkl cytoolz python-blosc pandas \
-    psycopg2 ipython tini bokeh && \
+    cython numpy numcodecs blosc lz4 nomkl cytoolz python-blosc pandas \
+    psycopg2 ipython tini bokeh ipykernel jupyter_client  && \
     conda clean --all -f -y
 
 COPY requirements.txt requirements.txt
