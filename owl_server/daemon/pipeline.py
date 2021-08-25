@@ -3,7 +3,6 @@ import concurrent.futures
 import json
 import logging
 import os
-import sys
 import time
 from contextlib import suppress
 
