@@ -203,5 +203,3 @@ class Pipeline:
         self.func = getattr(pipelines, self.name)
         self.logger.debug("Loaded pipeline %s", self.name)
         self.info["version"] = self.func.__version__
-        self.logger.debug("Checking pipeline schema")
-        self.func.schema(self.pdef)
