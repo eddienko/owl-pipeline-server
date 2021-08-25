@@ -170,6 +170,7 @@ async def pipeline_list(
                 q = q.where(db.Pipeline.c.user == username)
         else:
             q = q.where(db.Pipeline.c.user == username)
+    q = q.order_by(db.Pipeline.c.id.desc())
     res = await database.fetch_all(q)
     return res
 
@@ -357,6 +358,8 @@ async def get_user(user: str, authentication=Header(None), username=None):
     q = db.User.select()
     if user != "0":
         q = q.where(db.User.c.username == user)
+    else:
+        q = q.order_by(db.User.c.id)
     res = await database.fetch_all(q)
     # remove password
     resd = [dict(r) for r in res]
@@ -406,7 +409,7 @@ async def add_pdef(pdef: PipeDef, authentication=Header(None), username=None):
 @app.get("/api/pdef/list")
 @authenticate()
 async def list_pdef(authentication=Header(None), username=None):
-    q = db.PipelineDefinition.select()
+    q = db.PipelineDefinition.select().order_by(db.PipelineDefinition.c.id)
     res = await database.fetch_all(q)
     return res
 
