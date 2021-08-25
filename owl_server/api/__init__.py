@@ -182,6 +182,17 @@ async def pipeline_status_get(uid: int, authentication=Header(None), username=No
     return res
 
 
+@app.get("/api/pipeline/log/{uid}")
+@authenticate()
+async def pipeline_log(uid: int, authentication=Header(None), username=None):
+    # TODO: check that pipeline user == username
+    await asyncio.sleep(0)
+    log = ""
+    with suppress(Exception):
+        log = open(f"/var/run/owl/logs/pipeline_{uid}.log").read()
+    return {"log": log}
+
+
 @app.post("/api/pipeline/add")
 @authenticate()
 async def pipeline_add(pipe: Pipeline, authentication=Header(None), username=None):
