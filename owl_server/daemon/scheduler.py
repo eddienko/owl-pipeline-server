@@ -12,7 +12,7 @@ import zmq
 import zmq.asyncio
 from aiohttp.client_exceptions import ClientConnectorError
 from async_timeout import timeout
-from owl_server import k8s
+from owl_server import __version__, k8s
 from owl_server.config import config, refresh
 from owl_server.log import LogFilter, PipelineFileHandler
 
@@ -373,15 +373,24 @@ class Scheduler:
 
         command = "owl-server pipeline"
 
+        # TODO: Check that the image is allowed
+        dask_image_spec = pipe_config.get("image", self.env.OWL_IMAGE_SPEC)
+
+        # Make sure we are using the same version of owl-pipeline-server
+        # in case we are using custom images
+        extra_pip_packages = pdef["extra_pip_packages"]
+        if os.environ.get("RUN_DEVELOP", None) is not None:
+            extra_pip_packages = extra_pip_packages + f" owl-pipeline-server=={__version__}"
+
         env_vars = {
             "UID": uid,
             "JOBID": uid,
             "USER": user,
             "LOGLEVEL": config.loglevel,
             "PIPEDEF": json.dumps(pipe_config),
-            "DASK_IMAGE_SPEC": self.env.OWL_IMAGE_SPEC,
+            "DASK_IMAGE_SPEC": dask_image_spec,
             "OWL_IMAGE_SPEC": self.env.OWL_IMAGE_SPEC,
-            "EXTRA_PIP_PACKAGES": pdef["extra_pip_packages"],
+            "EXTRA_PIP_PACKAGES": extra_pip_packages,
             "OMP_NUM_THREADS": "1",
             "OPENBLAS_NUM_THREADS": "1",
             "MKL_NUM_THREADS": "1",
@@ -405,7 +414,7 @@ class Scheduler:
         self.logger.debug("Creating job %s", jobname)
         status = await k8s.kube_create_job(
             jobname,
-            self.env.OWL_IMAGE_SPEC,
+            dask_image_spec,
             command=command,
             namespace=self.namespace,
             extraConfig=config.pipeline,
