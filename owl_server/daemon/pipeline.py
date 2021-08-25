@@ -156,7 +156,7 @@ class Pipeline:
     @safe_loop()
     async def heartbeat(self):
         await self.pipe_socket.recv()
-        self.logger.info("Pipeline %s: heartbeat received", self.uid)
+        self.logger.debug("Pipeline %s: heartbeat received", self.uid)
         msg = {
             "status": self.status,
             "started": self.info["started"],
