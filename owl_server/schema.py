@@ -59,7 +59,7 @@ def Hostname():
         try:
             address = socket.gethostbyname(name)
         except ValueError:
-            raise vo.Invalid(f"Invalid IP address: {address}")
+            raise vo.Invalid(f"Invalid IP address: {name}")
         return address
 
     return checker
