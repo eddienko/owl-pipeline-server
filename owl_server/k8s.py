@@ -155,7 +155,7 @@ def kube_create_job_object(
 
     # And finaly we can create our V1JobSpec!
     body.spec = client.V1JobSpec(
-        ttl_seconds_after_finished=300, template=template.template, backoff_limit=1
+        ttl_seconds_after_finished=300, template=template.template, backoff_limit=2
     )
     return body
 
