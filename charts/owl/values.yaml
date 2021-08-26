@@ -7,8 +7,7 @@ replicaCount: 1
 image:
   repository: imaxt/owl-server
   pullPolicy: IfNotPresent
-  # Overrides the image tag whose default is the chart appVersion.
-  # tag: "latest"
+  tag: "0.8.1"
 
 imagePullSecrets: []
 nameOverride: ""
