@@ -40,7 +40,7 @@ setup(
     tests_require=test_requirements,
     url="https://github.com/eddienko/owl-pipeline-server",
     project_urls=project_urls,
-    version="0.8.0",
+    version="0.8.1",
     zip_safe=False,
     python_requires=">=3.8",
 )
