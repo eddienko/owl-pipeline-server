@@ -47,4 +47,3 @@ def start_loop(pdef):
 
     if res in ["ERROR"]:
         raise Exception()
-
