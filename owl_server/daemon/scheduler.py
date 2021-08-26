@@ -558,8 +558,8 @@ class Scheduler:
             if status in ["FINISHED"]:
                 self.logger.debug("Pipeline completed %s", pipe)
                 await self.stop_pipeline(pipe, status)
-            elif status in ["ERROR"]:
-                self.logger.debug("Pipeline %s returned status %s", pipe, status)
+            # elif status in ["ERROR"]:
+                # self.logger.debug("Pipeline %s returned status %s", pipe, status)
                 # We do not stop the pipeline here to allow for
                 # jobs to rerun
                 # self.logger.debug("Stopping pipeline %s with status %s", pipe, status)
