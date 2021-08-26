@@ -124,15 +124,14 @@ class Pipeline:
     def dask_config(self):
         resources = self.pdef["resources"]
         worker = config.dask.kubernetes["worker-template"]["spec"]["containers"][0]
-        nthreads = resources["threads"]
-        nprocs = resources["processes"]
+        nthreads = resources["cores"]
         memory = resources["memory"]
         args = [
             "dask-worker",
             "--nthreads",
             f"{nthreads}",
             "--nprocs",
-            f"{nprocs}",
+            "1",
             "--memory-limit",
             f"{memory}GB",
             "--death-timeout",
@@ -141,11 +140,11 @@ class Pipeline:
         worker["args"] = args
         worker["resources"] = {
             "limits": {
-                "cpu": f"{nthreads*nprocs}",
+                "cpu": f"{nthreads}",
                 "memory": f"{memory}G",
             },
             "requests": {
-                "cpu": f"{nthreads*nprocs}",
+                "cpu": f"{nthreads}",
                 "memory": f"{memory}G",
             },
         }
