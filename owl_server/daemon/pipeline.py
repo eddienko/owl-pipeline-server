@@ -10,6 +10,7 @@ import zmq
 import zmq.asyncio
 from dask.config import config as dask_config
 from dask_kubernetes import KubeCluster
+from distributed import Client
 from owl_server import pipelines
 from owl_server.config import config
 from voluptuous import Invalid, MultipleInvalid
@@ -88,7 +89,7 @@ class Pipeline:
         )
         self.proc.add_done_callback(self.pipeline_done)
         self._tasks.append(self.proc)
-        # self._tasks.append(asyncio.ensure_future(self.dask_logs()))
+        self._tasks.append(asyncio.ensure_future(self.get_scheduler_info()))
 
         self.status = "RUNNING"
         self.running = True
@@ -114,8 +115,10 @@ class Pipeline:
         self.logger.info("Starting Dask cluster")
         self.dask_config()
         nworkers = self.pdef["resources"]["workers"]
-        self.cluster = await KubeCluster(asynchronous=True, n_workers=nworkers)
-        # self.cluster.adapt(minimum=nworkers, maximum=nworkers)
+        self.cluster = await KubeCluster(asynchronous=True)
+        self.cluster.adapt(minimum=nworkers, maximum=nworkers)
+        while len(self.cluster.scheduler_info["workers"]) != nworkers:
+            await asyncio.sleep(1)
         self.logger.debug("Scheduler address: %s", self.cluster.scheduler_address)
 
     def dask_config(self):
@@ -198,6 +201,8 @@ class Pipeline:
         """
         self.logger.info("Stopping pipeline ID %s", self.uid)
         if self.running:
+            self.running = False
+
             with suppress(Exception):
                 await self.cluster.close()
 
@@ -209,15 +214,30 @@ class Pipeline:
             with suppress(Exception):
                 self.pipe_socket.close(linger=0)
 
-            self.running = False
+    @safe_loop()
+    async def get_scheduler_info(self):
+        if self.running:
+            async with Client(self.cluster, asynchronous=True) as client:
+                scheduler_info = client.scheduler_info()
+            self.info["scheduler"] = scheduler_info
+            self.logger.debug("Scheduler info : %s", scheduler_info)
 
-    # @safe_loop()
-    # async def dask_logs(self):
-    #     await asyncio.sleep(60)
-    #     logs = await self.cluster.get_logs()
-    #     for k, v in logs.items():
-    #         if k in ["Cluster", "Scheduler"]:
-    #             continue
+            await self.delete_unresponsive_workers()
+        await asyncio.sleep(config.heartbeat)
+
+    async def delete_unresponsive_workers(self):
+        now = time.time()
+        workers = self.info["scheduler"]["workers"]
+        last_seen = {v['id']: now - v['last_seen'] for v in workers.values()}
+        for k, v in last_seen.items():
+            if v > 5 * config.heartbeat:
+                self.logger.warn("Restarting unresponsive worker %s", k)
+                await self.delete_worker(k)
+        await asyncio.sleep(0.1)
+
+    async def delete_worker(self, n):
+        pod = self.cluster.workers[n]
+        await pod.close()
 
     def check_pipeline(self):
         self.logger.debug("Loading pipeline %s", self.name)
