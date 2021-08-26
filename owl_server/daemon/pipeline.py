@@ -15,6 +15,7 @@ from owl_server import pipelines
 from owl_server.config import config
 from voluptuous import Invalid, MultipleInvalid
 
+from ..schema import schema_pipeline
 from .utils import safe_loop
 
 
@@ -50,7 +51,7 @@ class Pipeline:
         self.uid = os.environ.get("UID")
         self.executor = concurrent.futures.ThreadPoolExecutor(max_workers=3)
         self.pdef = pdef
-        self.name = self.pdef["name"]
+        self.name = self.pdef.get("name", "noname")
         self.info = {"started": time.time(), "version": ""}
         self._tasks = []
         self.running = False
@@ -65,8 +66,6 @@ class Pipeline:
         return time.monotonic() - self._watch
 
     async def start(self):
-        self.logger.info("Starting pipeline ID %s with %s", self.uid, self.pdef)
-
         await self._setup_sockets()
 
         self._tasks.append(asyncio.ensure_future(self.heartbeat()))
@@ -78,7 +77,9 @@ class Pipeline:
                 "Unable to load pipeline %s: %s", self.name, e, exc_info=True
             )
             self.status = "ERROR"
-            return
+            raise
+
+        self.logger.info("Starting pipeline ID %s with %s", self.uid, self.pdef)
 
         await self.start_dask_cluster()
 
@@ -163,7 +164,7 @@ class Pipeline:
         self.pipe_socket.setsockopt(zmq.IDENTITY, self.uid.encode("utf-8"))
         self.pipe_socket.connect(self.pipe_addr)
 
-        await asyncio.sleep(0)
+        await asyncio.sleep(1)
 
     @safe_loop()
     async def heartbeat(self):
@@ -239,6 +240,8 @@ class Pipeline:
         await pod.close()
 
     def check_pipeline(self):
+        self.logger.debug("Checking pipeline schema")
+        self.pdef = schema_pipeline(self.pdef)
         self.logger.debug("Loading pipeline %s", self.name)
         self.func = getattr(pipelines, self.name)
         self.logger.debug("Loaded pipeline %s", self.name)

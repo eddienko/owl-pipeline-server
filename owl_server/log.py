@@ -314,6 +314,6 @@ class PUBHandler(logging.Handler):
 
     def close(self):
         if self.socket:
-            self.socket.close(linger=0)
+            self.socket.close()
             self.socket = None
             self.release()

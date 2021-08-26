@@ -4,10 +4,8 @@ import logging.config
 import signal
 from argparse import Namespace
 
-from owl_server.config import config  # noqa: F401
 from owl_server.daemon import Pipeline
 from owl_server.log import initlog
-from owl_server.schema import schema_pipeline
 from owl_server.utils import read_config
 
 logger = logging.getLogger("owl.cli")
@@ -23,12 +21,12 @@ def run_pipeline(args: Namespace) -> None:
     """
     initlog("pipeline")
 
-    pdef = read_config(args.conf, schema_pipeline)
+    pdef = read_config(args.conf)
 
     try:
         start_loop(pdef)
-    except:  # noqa
-        logger.critical("Error running the pipeline", exc_info=True)
+    except Exception as e:  # noqa
+        logger.critical("Error running the pipeline : %s", e, exc_info=True)
         raise
 
     logger.info("Pipeline run ended.")
