@@ -50,9 +50,9 @@ class Pipeline:
         self.executor = concurrent.futures.ThreadPoolExecutor(max_workers=3)
         self.pdef = pdef
         self.name = self.pdef["name"]
-        self.info = {"started": time.time()}
+        self.info = {"started": time.time(), "version": ""}
         self._tasks = []
-        self.is_started = False
+        self.running = False
         self.status = "STARTING"
         self._watch = time.monotonic()
 
@@ -65,7 +65,6 @@ class Pipeline:
 
     async def start(self):
         self.logger.info("Starting pipeline ID %s with %s", self.uid, self.pdef)
-        self.is_started = True
 
         await self._setup_sockets()
 
@@ -89,8 +88,16 @@ class Pipeline:
         )
         self.proc.add_done_callback(self.pipeline_done)
         self._tasks.append(self.proc)
+        # self._tasks.append(asyncio.ensure_future(self.dask_logs()))
 
         self.status = "RUNNING"
+        self.running = True
+
+    async def run(self):
+        while self.running:
+            await asyncio.sleep(10)
+
+        return self.status
 
     def pipeline_done(self, future: asyncio.Future):
         self.logger.info("Pipeline ID %s finished", self.uid)
@@ -99,6 +106,9 @@ class Pipeline:
             self.status = "ERROR"
         else:
             self.status = "FINISHED"
+
+    def close(self):
+        asyncio.ensure_future(self.stop())
 
     async def start_dask_cluster(self):
         self.logger.info("Starting Dask cluster")
@@ -177,10 +187,9 @@ class Pipeline:
 
         await self.pipe_socket.send(json.dumps(msg).encode("utf-8"))
 
-        if self.status not in ["PENDING", "RUNNING"]:
-            with suppress(Exception):
-                await self.cluster.close()
-            # return True
+        if self.status in ["ERROR", "FINISHED"]:
+            self.close()
+            return True
 
     async def stop(self):
         """Stop pipeline worker.
@@ -188,14 +197,27 @@ class Pipeline:
         All tasks started by `start` are now cancelled.
         """
         self.logger.info("Stopping pipeline ID %s", self.uid)
-        if self.is_started:
+        if self.running:
+            with suppress(Exception):
+                await self.cluster.close()
+
             for task in self._tasks:
                 task.cancel()
-                with suppress(asyncio.CancelledError):
+                with suppress(Exception):
                     await task
 
             with suppress(Exception):
-                await self.cluster.close()
+                self.pipe_socket.close(linger=0)
+
+            self.running = False
+
+    # @safe_loop()
+    # async def dask_logs(self):
+    #     await asyncio.sleep(60)
+    #     logs = await self.cluster.get_logs()
+    #     for k, v in logs.items():
+    #         if k in ["Cluster", "Scheduler"]:
+    #             continue
 
     def check_pipeline(self):
         self.logger.debug("Loading pipeline %s", self.name)

@@ -28,7 +28,10 @@ def run_pipeline(args: Namespace) -> None:
     try:
         start_loop(pdef)
     except:  # noqa
-        logger.critical("Error starting the pipeline", exc_info=True)
+        logger.critical("Error running the pipeline", exc_info=True)
+        raise
+
+    logger.info("Pipeline run ended.")
 
 
 def start_loop(pdef):
@@ -36,10 +39,12 @@ def start_loop(pdef):
     logger.info("Starting Pipeline")
     pipeline = Pipeline(pdef)
 
-    loop.add_signal_handler(signal.SIGTERM, loop.stop)
-    loop.add_signal_handler(signal.SIGINT, loop.stop)
+    loop.add_signal_handler(signal.SIGTERM, pipeline.close)
+    loop.add_signal_handler(signal.SIGINT, pipeline.close)
 
-    loop.run_forever()
-    loop.run_until_complete(pipeline.stop())
-
+    res = loop.run_until_complete(pipeline.run())
     loop.close()
+
+    if res in ["ERROR"]:
+        raise Exception()
+

@@ -298,7 +298,7 @@ class PUBHandler(logging.Handler):
             self.socket.send_multipart([topic, msg])
 
     def handleError(self, record):
-        self.socket.close()
+        self.socket.close(linger=0)
         self.socket = None
 
     def emit(self, record):
@@ -308,8 +308,12 @@ class PUBHandler(logging.Handler):
         except Exception:
             self.handleError(record)
 
+    def release(self):
+        with suppress(Exception):
+            self.lock.release()
+
     def close(self):
         if self.socket:
-            self.socket.close()
+            self.socket.close(linger=0)
             self.socket = None
             self.release()

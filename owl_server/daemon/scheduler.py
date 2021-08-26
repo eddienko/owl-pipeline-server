@@ -559,8 +559,11 @@ class Scheduler:
                 self.logger.debug("Pipeline completed %s", pipe)
                 await self.stop_pipeline(pipe, status)
             elif status in ["ERROR"]:
-                self.logger.debug("Stopping pipeline %s with status %s", pipe, status)
-                await self.stop_pipeline(pipe, status)
+                self.logger.debug("Pipeline %s returned status %s", pipe, status)
+                # We do not stop the pipeline here to allow for
+                # jobs to rerun
+                # self.logger.debug("Stopping pipeline %s with status %s", pipe, status)
+                # await self.stop_pipeline(pipe, status)
             elif time.monotonic() - last > 5 * self.heartbeat:
                 self.logger.debug("Heartbeat not received. Stopping pipeline %s", pipe)
                 status = "ERROR"
