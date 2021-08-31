@@ -118,6 +118,14 @@ def kube_create_job_object(
 
     if (resources := extraConfig.resources) is not None:
         resourcesReq = client.V1ResourceRequirements(**resources)
+        cpu_requests = resources["requests"]["cpu"]
+        mem_requests = resources["requests"]["memory"]
+        cpu_limits = resources["limits"]["cpu"]
+        mem_limits = resources["limits"]["memory"]
+        env_list.append(client.V1EnvVar(name="CPU_REQUESTS", value=str(cpu_requests)))
+        env_list.append(client.V1EnvVar(name="MEM_REQUESTS", value=str(mem_requests)))
+        env_list.append(client.V1EnvVar(name="CPU_LIMITS", value=str(cpu_limits)))
+        env_list.append(client.V1EnvVar(name="MEM_LIMITS", value=str(mem_limits)))
     else:
         resourcesReq = None
 
