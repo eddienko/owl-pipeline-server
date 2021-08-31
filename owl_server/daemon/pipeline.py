@@ -217,8 +217,7 @@ class Pipeline:
     @safe_loop()
     async def get_scheduler_info(self):
         if self.running:
-            async with Client(self.cluster, asynchronous=True) as client:
-                scheduler_info = client.scheduler_info()
+            scheduler_info = self.cluster.scheduler.identity()
             self.info["scheduler"] = scheduler_info
             self.logger.debug("Scheduler info : %s", scheduler_info)
 
