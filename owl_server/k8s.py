@@ -201,7 +201,10 @@ async def kube_delete_job(name, namespace=None):
     async with ApiClient() as api:
         v1 = client.BatchV1Api(api)
         res = await v1.delete_namespaced_job(
-            name, namespace or "default", propagation_policy="Background", grace_period_seconds=0
+            name,
+            namespace or "default",
+            propagation_policy="Background",
+            grace_period_seconds=0,
         )
     return res
 
