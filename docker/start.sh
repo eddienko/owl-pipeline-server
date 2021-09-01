@@ -3,7 +3,7 @@
 if [[ ! -z "${RUN_DEVELOP:-}" ]]; then
     pip install git+https://github.com/eddienko/owl-pipeline-server.git@devel
 else
-    pip install owl-pipeline-server==0.8.1
+    pip install owl-pipeline-server==0.8.2
 fi
 
 if [[ ! -z "${EXTRA_CONDA_PACKAGES:-}" ]]; then

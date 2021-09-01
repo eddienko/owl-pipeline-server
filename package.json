@@ -1,7 +1,7 @@
 {
   "name": "owl-pipeline-server",
   "description": "Owl Job Scheduler Server",
-  "version": "0.8.1",
+  "version": "0.8.2",
   "license": "MIT",
   "repository": "https://github.com/eddienko/owl-pipeline-server"
 }
