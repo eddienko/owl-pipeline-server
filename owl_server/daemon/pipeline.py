@@ -10,7 +10,6 @@ import zmq
 import zmq.asyncio
 from dask.config import config as dask_config
 from dask_kubernetes import KubeCluster
-from distributed import Client
 from owl_server import pipelines
 from owl_server.config import config
 from voluptuous import Invalid, MultipleInvalid
