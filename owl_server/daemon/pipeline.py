@@ -10,6 +10,7 @@ import zmq
 import zmq.asyncio
 from dask.config import config as dask_config
 from dask_kubernetes import KubeCluster
+from distributed.core import rpc
 from owl_server import pipelines
 from owl_server.config import config
 from voluptuous import Invalid, MultipleInvalid
@@ -216,10 +217,10 @@ class Pipeline:
     @safe_loop()
     async def get_scheduler_info(self):
         if self.running:
-            scheduler_info = self.cluster.scheduler.identity()
+            async with rpc(self.cluster.scheduler_address) as s:
+                scheduler_info = await s.identity()
             self.info["scheduler"] = scheduler_info
             self.logger.debug("Scheduler info : %s", scheduler_info)
-
             await self.delete_unresponsive_workers()
         await asyncio.sleep(config.heartbeat)
 
