@@ -7,7 +7,7 @@ replicaCount: 1
 image:
   repository: imaxt/owl-server
   pullPolicy: IfNotPresent
-  tag: "0.8.2"
+  tag: "0.8.3"
 
 imagePullSecrets: []
 nameOverride: ""
