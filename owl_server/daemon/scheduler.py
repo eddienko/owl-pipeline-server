@@ -41,6 +41,7 @@ class Scheduler:
         self.pipelines = {}  # list of pipelines running
         self._max_pipe = config.max_pipelines or MAX_PIPELINES
         self.kube_metrics = {}
+        self.pipe_metrics = {}
         config.pop("dbi")  # database configuration, remove it as it is not used here
 
         self.is_started = False
@@ -219,7 +220,30 @@ class Scheduler:
                 )
                 break
 
+            res = pipe["config"]["resources"]
+            res_cores = res["cores"] * res["workers"]
+            res_mem = res["memory"] * res["workers"]
+            if self.check_pipeline_resources(res_cores, res_mem):
+                self.logger.info("Pipeline %s can run with requested resources", pipe["id"])
+            else:
+                self.logger.warn("Not enough resources to run pipeline %s", pipe["id"])
+                continue
+
             await self.start_pipeline(pipe)
+            self.pipe_metrics[pipe["id"]] = {"cores": res_cores, "mem": res_mem}
+
+    def check_pipeline_resources(self, res_cores, res_mem):
+        with suppress(KeyError):
+            avail_cores = self.kube_metrics["machine_cpu_cores"] - self.kube_metrics["kube_pod_container_resource_requests_cpu_cores"]
+            avail_mem = self.kube_metrics["machine_memory_bytes"] - self.kube_metrics["kube_pod_container_resource_requests_memory_bytes"]
+            used_pipe_cores = sum(v["cores"] for v in self.pipe_metrics.values())
+            used_pipe_mem = sum(v["mem"] for v in self.pipe_metrics.values())
+            avail_cores = avail_cores - used_pipe_cores
+            avail_mem = avail_mem - used_pipe_mem * 1e6
+            if (avail_cores < res_cores) or (avail_mem < res_mem * 1e6):
+                return
+        return True
+
 
     @safe_loop()
     async def cancel_pipelines(self):
@@ -362,8 +386,6 @@ class Scheduler:
             self.logger.error("Pipeline found but not active %s", config["name"])
             raise Exception("Fingerprint failed")
 
-        # TODO: check that resources requested can be allocated
-
         self.logger.debug("Starting pipeline ID %s", uid)
 
         with open(f"/var/run/owl/conf/pipeline_{uid}.yaml", "w") as fh:
@@ -385,7 +407,7 @@ class Scheduler:
         env_vars = {
             "UID": uid,
             "JOBID": uid,
-            "USER": user,
+            "USERNAME": user,
             "LOGLEVEL": config.loglevel,
             "PIPEDEF": json.dumps(pipe_config),
             "DASK_IMAGE_SPEC": dask_image_spec,
@@ -408,10 +430,10 @@ class Scheduler:
 
         # Reload global config replacing USER
         # This works because we run in one thread and we do not await until used
-        os.environ.update({"USER": user})
+        os.environ.update({"USERNAME": user})
         refresh()
 
-        self.logger.debug("Creating job %s", jobname)
+        self.logger.debug("Creating job %s with config %s", jobname, config.pipeline)
         status = await k8s.kube_create_job(
             jobname,
             dask_image_spec,
@@ -465,6 +487,7 @@ class Scheduler:
             handler = self.pipelines[uid]["handler"]
             self.logger.removeHandler(handler)
         self.pipelines.pop(uid)
+
 
     @safe_loop()
     async def heartbeat_pipeline(self, uid):
@@ -604,6 +627,10 @@ class Scheduler:
         if "detail" in msg:
             self.logger.error(msg["detail"])
             return
+
+        with suppress(KeyError):
+            if status not in ["STARTING", "PENDING"]:
+                self.pipe_metrics.pop(uid)
 
     async def get_pipedef(self, name: str):
         """Retrieve pipeline definion file from API
