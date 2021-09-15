@@ -22,4 +22,6 @@ if [[ ! -z "${EXTRA_PIP_PACKAGES:-}" ]]; then
     /opt/conda/bin/pip install $EXTRA_PIP_PACKAGES
 fi
 
-sudo -E --preserve-env=PATH -H -u user exec "$@"
+echo "$@" > /tmp/run.sh
+chmod +x /tmp/run.sh
+sudo -E --preserve-env=PATH -H -u user /tmp/run.sh
