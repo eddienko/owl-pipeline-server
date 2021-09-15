@@ -407,7 +407,7 @@ class Scheduler:
         env_vars = {
             "UID": uid,
             "JOBID": uid,
-            "USER": user,
+            "USERNAME": user,
             "LOGLEVEL": config.loglevel,
             "PIPEDEF": json.dumps(pipe_config),
             "DASK_IMAGE_SPEC": dask_image_spec,
@@ -430,7 +430,7 @@ class Scheduler:
 
         # Reload global config replacing USER
         # This works because we run in one thread and we do not await until used
-        os.environ.update({"USER": user})
+        os.environ.update({"USERNAME": user})
         refresh()
 
         self.logger.debug("Creating job %s", jobname)
