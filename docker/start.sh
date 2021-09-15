@@ -24,4 +24,4 @@ fi
 
 echo "$@" > /tmp/run.sh
 chmod +x /tmp/run.sh
-sudo -E --preserve-env=PATH -H -u user /tmp/run.sh
+sudo -E --preserve-env=PATH --preserve-env=USERNAME -H -u user /tmp/run.sh
