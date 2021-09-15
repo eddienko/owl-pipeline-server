@@ -433,7 +433,7 @@ class Scheduler:
         os.environ.update({"USERNAME": user})
         refresh()
 
-        self.logger.debug("Creating job %s", jobname)
+        self.logger.debug("Creating job %s with config %s", jobname, config.pipeline)
         status = await k8s.kube_create_job(
             jobname,
             dask_image_spec,
