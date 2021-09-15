@@ -6,9 +6,15 @@ else
     pip install owl-pipeline-server==0.8.3
 fi
 
+if [[ ! -z "${EXTRA_APT_PACKAGES:-}" ]]; then
+    echo "EXTRA_APT_PACKAGES environment variable found. Installing".
+    apt update
+    apt install -y --no-install-recommends $EXTRA_APT_PACKAGES
+fi
+
 if [[ ! -z "${EXTRA_CONDA_PACKAGES:-}" ]]; then
     echo "EXTRA_CONDA_PACKAGES environment variable found. Installing".
-    /opt/conda/bin/conda install $EXTRA_PIP_PACKAGES -c conda-forge -c default
+    /opt/conda/bin/conda install $EXTRA_CONDA_PACKAGES -c conda-forge -c default
 fi
 
 if [[ ! -z "${EXTRA_PIP_PACKAGES:-}" ]]; then
@@ -16,4 +22,4 @@ if [[ ! -z "${EXTRA_PIP_PACKAGES:-}" ]]; then
     /opt/conda/bin/pip install $EXTRA_PIP_PACKAGES
 fi
 
-exec "$@"
+sudo -E --preserve-env=PATH -H -u user "$@"

@@ -46,14 +46,13 @@ COPY ./docker/start.sh /usr/local/bin/start.sh
 RUN chmod a+rx /usr/local/bin/start.sh
 
 RUN addgroup --gid 1000 user && \
-    adduser --home /user --uid 1000 --gid 1000 --disabled-password --gecos None user
+    adduser --home /home/user --uid 1000 --gid 1000 --disabled-password --gecos None user
 
 RUN chown -R user:user /opt/conda
 
-ENV PATH=/user/.local/bin:$PATH
+ENV PATH=/home/user/.local/bin:$PATH
 
-WORKDIR /user
-USER 1000
+WORKDIR /home/user
 
 ENTRYPOINT ["tini", "-g", "--", "/usr/local/bin/start.sh"]
 
