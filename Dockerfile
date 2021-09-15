@@ -8,6 +8,7 @@ ENV PATH /opt/conda/bin:$PATH
 
 RUN apt-get update \
     && apt-get install -yq --no-install-recommends \
+    sudo \
     bzip2 \
     wget \
     ca-certificates \
@@ -42,17 +43,20 @@ RUN conda install -y -c conda-forge \
 COPY requirements.txt requirements.txt
 RUN pip install -r requirements.txt
 
-COPY ./docker/start.sh /usr/local/bin/start.sh
-RUN chmod a+rx /usr/local/bin/start.sh
-
 RUN addgroup --gid 1000 user && \
-    adduser --home /user --uid 1000 --gid 1000 --disabled-password --gecos None user
+    adduser --home /home/user --uid 1000 --gid 1000 --disabled-password --gecos None user
 
 RUN chown -R user:user /opt/conda
 
+RUN echo "Cmnd_Alias APT = /usr/bin/apt\nuser    ALL=(ALL) NOPASSWD: APT" > /etc/sudoers.d/apt
+RUN chmod o-r /etc/sudoers.d/*
+
+COPY ./docker/start.sh /usr/local/bin/start.sh
+RUN chmod a+rx /usr/local/bin/start.sh
+
 ENV PATH=/user/.local/bin:$PATH
 
-WORKDIR /user
+WORKDIR /home/user
 USER 1000
 
 ENTRYPOINT ["tini", "-g", "--", "/usr/local/bin/start.sh"]
