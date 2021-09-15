@@ -8,6 +8,7 @@ ENV PATH /opt/conda/bin:$PATH
 
 RUN apt-get update \
     && apt-get install -yq --no-install-recommends \
+    sudo \
     bzip2 \
     wget \
     ca-certificates \
