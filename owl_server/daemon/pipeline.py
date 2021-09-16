@@ -3,9 +3,9 @@ import concurrent.futures
 import json
 import logging
 import os
-import socket
 import time
 from contextlib import suppress
+from pathlib import Path
 
 import zmq
 import zmq.asyncio
@@ -18,13 +18,8 @@ from owl_server.config import config
 from voluptuous import Invalid, MultipleInvalid
 
 from ..schema import schema_pipeline
-from .utils import safe_loop
+from .utils import bar, foo, safe_loop
 
-
-def foo(*args, **kwargs):
-    hostname = socket.gethostname()
-    ip_address = socket.gethostbyname(hostname)
-    return {"hostname": hostname, "ip": ip_address}
 
 class Pipeline:
     """Pipeline worker.
@@ -128,7 +123,8 @@ class Pipeline:
         while len(self.cluster.scheduler_info["workers"]) != nworkers:
             await asyncio.sleep(1)
         self.logger.debug("Scheduler address: %s", self.cluster.scheduler_address)
-        await self.get_client_info()
+        if Path("/etc/slurm/slurm.conf").exists():
+            await self.setup_slurm_cluster()
 
     def dask_config(self):
         resources = self.pdef["resources"]
@@ -222,12 +218,14 @@ class Pipeline:
             with suppress(Exception):
                 self.pipe_socket.close(linger=0)
 
-    async def get_client_info(self):
+    async def setup_slurm_cluster(self):
         async with Client(self.cluster.scheduler.address, asynchronous=True) as client:
-            scheduler_info = await client.run_on_scheduler(foo)
-            worker_info = await client.run(foo)
-        self.logger.info('%s, %s', scheduler_info, worker_info)
-
+            info = await client.run_on_scheduler(foo)
+            workers_info = await client.run(foo)
+            info["workers"] = workers_info
+            await client.run(bar, info)
+            await client.run_on_scheduler(bar, info)
+        self.logger.info('%s', info)
 
     @safe_loop()
     async def get_scheduler_info(self):
