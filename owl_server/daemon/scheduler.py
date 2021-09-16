@@ -396,7 +396,7 @@ class Scheduler:
         command = "owl-server pipeline"
 
         # TODO: Check that the image is allowed
-        dask_image_spec = pipe_config.get("image", self.env.OWL_IMAGE_SPEC)
+        dask_image_spec = pipe_config["resources"].get("image", self.env.OWL_IMAGE_SPEC)
 
         # Make sure we are using the same version of owl-pipeline-server
         # in case we are using custom images
