@@ -3,6 +3,7 @@ import concurrent.futures
 import json
 import logging
 import os
+import socket
 import time
 from contextlib import suppress
 
@@ -10,6 +11,7 @@ import zmq
 import zmq.asyncio
 from dask.config import config as dask_config
 from dask_kubernetes import KubeCluster
+from distributed import Client
 from distributed.core import rpc
 from owl_server import pipelines
 from owl_server.config import config
@@ -18,6 +20,11 @@ from voluptuous import Invalid, MultipleInvalid
 from ..schema import schema_pipeline
 from .utils import safe_loop
 
+
+def foo(*args, **kwargs):
+    hostname = socket.gethostname()
+    ip_address = socket.gethostbyname(hostname)
+    return {"hostname": hostname, "ip": ip_address}
 
 class Pipeline:
     """Pipeline worker.
@@ -121,6 +128,7 @@ class Pipeline:
         while len(self.cluster.scheduler_info["workers"]) != nworkers:
             await asyncio.sleep(1)
         self.logger.debug("Scheduler address: %s", self.cluster.scheduler_address)
+        await self.get_client_info()
 
     def dask_config(self):
         resources = self.pdef["resources"]
@@ -213,6 +221,13 @@ class Pipeline:
 
             with suppress(Exception):
                 self.pipe_socket.close(linger=0)
+
+    async def get_client_info(self):
+        async with Client(self.cluster.scheduler.address, asynchronous=True) as client:
+            scheduler_info = await client.run_on_scheduler(foo)
+            worker_info = await client.run(foo)
+        self.logger.info('%s, %s', scheduler_info, worker_info)
+
 
     @safe_loop()
     async def get_scheduler_info(self):
