@@ -211,7 +211,7 @@ def update_defaults(new, config=config, defaults=defaults):
     """
     defaults.append(new)
     update(config, new, priority="old")
-    schema_server(config)
+    # schema_server(config)
 
 
 def _initialize():
