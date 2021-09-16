@@ -76,6 +76,7 @@ def Choice(kind, choices):
 
 def DockerImage():
     def checker(value):
+        return value
         m = re.compile(r"([a-z]+)/([a-z0-9-):([a-z0-9.]+)?").match(value)
         if m is None:
             raise vo.Invalid(f"Invalid Docker image: {value!r}")
