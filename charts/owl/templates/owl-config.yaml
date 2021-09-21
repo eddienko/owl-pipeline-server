@@ -30,6 +30,9 @@ data:
       OWL_API_SERVICE_PORT: ${OWL_API_SERVICE_PORT}
       OWL_IMAGE_SPEC: ${OWL_IMAGE_SPEC}
 
+    smtp:
+      {{- toYaml .Values.smtp | nindent 6 }}
+
     pipeline:
       securityContext:
         {{- toYaml .Values.securityContext | nindent 8 }}
