@@ -54,6 +54,7 @@ User = sqlalchemy.Table(
     sqlalchemy.Column("id", sqlalchemy.Integer, primary_key=True),
     sqlalchemy.Column("username", sqlalchemy.String(length=32), unique=True),
     sqlalchemy.Column("password", sqlalchemy.String(length=128)),
+    sqlalchemy.Column("email", sqlalchemy.String(length=64)),
     sqlalchemy.Column("is_admin", sqlalchemy.Boolean, default=False),
     sqlalchemy.Column("active", sqlalchemy.Boolean, default=True),
 )
