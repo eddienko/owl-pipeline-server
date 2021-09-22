@@ -117,6 +117,7 @@ class Scheduler:
                 asyncio.create_task(self.query_prometheus()),
                 asyncio.create_task(self.logging_protocol()),
                 asyncio.create_task(self.admin_commands()),
+                asyncio.create_task(self.live_commands()),
             ]
         )
 
@@ -323,8 +324,8 @@ class Scheduler:
 
     async def _start_liveness_probe(self):
         # liveness and readiness probes
-        self.live_addr = f"tcp://0.0.0.0:{8080}"
-        self.live_router = self.ctx.socket(zmq.REP)
+        self.live_addr = f"tcp://0.0.0.0:8080"
+        self.live_router = self.ctx.socket(zmq.STREAM)
         self.live_router.bind(self.live_addr)
         self.logger.debug("Liveness probe address: %s", self.live_addr)
 
@@ -555,6 +556,19 @@ class Scheduler:
             return
         self.heartbeat = heartbeat if heartbeat > 0 else config.heartbeat
         self.logger.info("Setting heartbeat to %s seconds", self.heartbeat)
+
+    @safe_loop()
+    async def live_commands(self):
+        """Receive and execute live commands. Reuse for metrics.
+        """
+        req_id, msg = await self.live_router.recv_multipart()
+        if 'metrics' in msg.decode():
+            metrics = [f"owl_pipelines_running {len(self.pipelines)}", ""]
+            metrics_str = '\r\n'.join(metrics)
+            await self.live_router.send_multipart([
+                req_id, b'HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\n',
+                req_id, metrics_str.encode(),
+                req_id, b''])
 
     @safe_loop()
     async def admin_commands(self):
