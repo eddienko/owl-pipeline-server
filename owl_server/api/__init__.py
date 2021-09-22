@@ -353,12 +353,15 @@ async def change_password(user: User, authentication=Header(None), username=None
 
 
 @app.get("/api/auth/user/get/{user}")
-@authenticate(admin=True)
+@authenticate()
 async def get_user(user: str, authentication=Header(None), username=None):
     q = db.User.select()
     if user != "0":
+        if username not in [user, OWL_USERNAME]:
+            await check_admin(username)
         q = q.where(db.User.c.username == user)
     else:
+        await check_admin(username)
         q = q.order_by(db.User.c.id)
     res = await database.fetch_all(q)
     # remove password

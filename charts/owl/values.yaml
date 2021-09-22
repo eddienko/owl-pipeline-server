@@ -126,6 +126,7 @@ autoscaling:
 smtp:
   enabled: false
   host: ""
+  port: 25
   user: ""
   password: ""
-  from_address: ""
+  from_address: "owl@localhost"
