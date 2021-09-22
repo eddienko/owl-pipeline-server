@@ -384,6 +384,13 @@ class Scheduler:
             self.logger.error("Pipeline found but not active %s", config["name"])
             raise Exception("Fingerprint failed")
 
+        userinfo = await self.get_user(user)
+        if userinfo is None:
+            self.logger.error(
+                "Failed to obtain user info for pipeline %s", config["name"]
+            )
+            raise Exception("User info failed")
+
         self.logger.debug("Starting pipeline ID %s", uid)
 
         with open(f"/var/run/owl/conf/pipeline_{uid}.yaml", "w") as fh:
@@ -449,6 +456,7 @@ class Scheduler:
         self.pipelines[uid] = {
             "last": time.monotonic(),
             "heartbeat": heartbeat,
+            "userinfo": userinfo,
             "job": status,
             "name": jobname,
             "handler": handler
