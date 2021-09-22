@@ -108,8 +108,10 @@ class Pipeline:
         if e := future.exception():
             self.logger.critical("Failed to run pipeline %s", e)
             self.status = "ERROR"
+            self.result = f"{e}"
         else:
             self.status = "FINISHED"
+            self.result = future.result()
 
     def close(self):
         asyncio.ensure_future(self.stop())
@@ -176,6 +178,7 @@ class Pipeline:
         self.logger.debug("Pipeline %s: heartbeat received", self.uid)
         msg = {
             "status": self.status,
+            "result": "",
             "started": self.info["started"],
             "elapsed": self.elapsed,
             "version": self.info["version"],
@@ -191,6 +194,9 @@ class Pipeline:
                     }
                 }
             )
+
+        with suppress(AttributeError):
+            msg["result"] = self.result
 
         await self.pipe_socket.send(json.dumps(msg).encode("utf-8"))
 
