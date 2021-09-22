@@ -2,13 +2,38 @@ import functools
 import os
 import subprocess
 from email.message import EmailMessage
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 
 import aiosmtplib
 
 email_txt = """
-Your pipeline {jobid} has finished with status: {status}.
+Your pipeline with ID {jobid} has completed with status: {status}.
+
+If the pipeline returns some result, please find it below.
 
 {result}
+
+You can obtain the full pipeline log output with the command
+
+owl job logs {jobid}
+"""
+
+email_html = """<html><body>
+<p>Your pipeline with ID {jobid} has completed with status: <b>{status}</b>.</p>
+
+<p>If the pipeline returns some result, please find it below.</p>
+
+<pre>
+{result}
+</pre>
+
+<p>You can obtain the full pipeline log output with the command:</p>
+
+<pre>
+owl job logs {jobid}
+</pre>
+</body></html>
 """
 
 
@@ -94,10 +119,17 @@ async def send_email(config, pipeline):
     status = pipeline["status"]
     result = pipeline.get("heartbeat", {}).get("result", "")
 
-    message = EmailMessage()
+    message = MIMEMultipart("alternative")
     message["From"] = config.get("from_address", "owl@localhost")
     message["To"] = to_address
     message["Subject"] = f"Pipeline {jobid}: {status}"
-    message.set_content(email_txt.format(jobid=jobid, status=status, result=result))
+    message_txt = MIMEText(
+        email_txt.format(jobid=jobid, status=status, result=result), "plain", "utf-8"
+    )
+    message_html = MIMEText(
+        email_html.format(jobid=jobid, status=status, result=result), "html", "utf-8"
+    )
+    message.attach(message_txt)
+    message.attach(message_html)
 
     await aiosmtplib.send(message, hostname=config["host"], port=config["port"])
