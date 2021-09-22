@@ -189,22 +189,9 @@ class Scheduler:
             with maxpipe.open() as fh:
                 self._max_pipe = int(fh.read()) or MAX_PIPELINES
 
-        # Check for pending pipelines
-        root = "/api/pipeline/list/pending"
-        url = f"http://{self.env.OWL_API_SERVICE_HOST}:{self.env.OWL_API_SERVICE_PORT}{root}"
-        headers = {"Authentication": f"owl {self._token}"}
-
         self.logger.debug("Checking for pipelines")
-        try:
-            async with timeout(self.heartbeat):
-                async with self.session.get(url, headers=headers) as resp:
-                    pipelines = await resp.json()
-        except ClientConnectorError:
-            self.logger.error("Unable to connect to API at %s", url)
-            return
-        except asyncio.TimeoutError:
-            self.logger.error("API request took too long. Cancelled")
-            return
+        root = "/api/pipeline/list/pending"
+        pipelines = await self._make_request(root)
 
         if "detail" in pipelines:
             self.logger.error(pipelines["detail"])
@@ -249,23 +236,9 @@ class Scheduler:
     async def cancel_pipelines(self):
         """Query for pipelines to cancel."""
         await asyncio.sleep(self.heartbeat)
-
-        # Check for pending pipelines
-        root = "/api/pipeline/list/to_cancel"
-        url = f"http://{self.env.OWL_API_SERVICE_HOST}:{self.env.OWL_API_SERVICE_PORT}{root}"
-        headers = {"Authentication": f"owl {self._token}"}
-
         self.logger.debug("Checking for pipelines to cancel")
-        try:
-            async with timeout(self.heartbeat):
-                async with self.session.get(url, headers=headers) as resp:
-                    pipelines = await resp.json()
-        except ClientConnectorError:
-            self.logger.error("Unable to connect to API at %s", url)
-            return
-        except asyncio.TimeoutError:
-            self.logger.error("API request took too long. Cancelled")
-            return
+        root = "/api/pipeline/list/to_cancel"
+        pipelines = await self._make_request(root)
 
         if "detail" in pipelines:
             self.logger.error(pipelines["detail"])
@@ -362,6 +335,31 @@ class Scheduler:
         handler.addFilter(logfilter)
         self.logger.addHandler(handler)
         return handler
+
+    async def _make_request(self, path, method=None, data=None):
+        method = method or "GET"
+        url = f"http://{self.env.OWL_API_SERVICE_HOST}:{self.env.OWL_API_SERVICE_PORT}{path}"
+        headers = {"Authentication": f"owl {self._token}"}
+        try:
+            async with timeout(self.heartbeat):
+                if method == "GET":
+                    async with self.session.get(url, headers=headers) as resp:
+                        response = await resp.json()
+                elif method == "POST":
+                    data = data or {}
+                    async with self.session.post(url, json=data, headers=headers) as resp:
+                        response = await resp.json()
+        except ClientConnectorError:
+            self.logger.error("Unable to connect to API at %s", url)
+            return
+        except asyncio.TimeoutError:
+            self.logger.error("API request took too long. Cancelled")
+            return
+        return response
+
+    async def get_user(self, username):
+        path = f"/api/auth/user/get/{username}"
+        return await self._make_request(path)
 
     async def start_pipeline(self, pipe: Dict[str, Any]):
         """Start a pipeline.
@@ -610,19 +608,8 @@ class Scheduler:
         self.logger.info("Updating pipeline %s - %s", uid, status)
         data = {"status": status}
         root = f"/api/pipeline/update/{uid}"
-        url = f"http://{self.env.OWL_API_SERVICE_HOST}:{self.env.OWL_API_SERVICE_PORT}{root}"
-        headers = {"Authentication": f"owl {self._token}"}
 
-        try:
-            async with timeout(self.heartbeat):
-                async with self.session.post(url, json=data, headers=headers) as resp:
-                    msg = await resp.json()
-        except ClientConnectorError:
-            self.logger.error("Unable to connect to API at %s", url)
-            return
-        except asyncio.TimeoutError:
-            self.logger.error("API request took too long. Cancelled")
-            return
+        msg = await self._make_request(root, method="POST", data=data)
 
         if "detail" in msg:
             self.logger.error(msg["detail"])
@@ -640,21 +627,9 @@ class Scheduler:
         name
             name of the pipeline
         """
-        root = f"/api/pdef/get/{name}"
-        url = f"http://{self.env.OWL_API_SERVICE_HOST}:{self.env.OWL_API_SERVICE_PORT}{root}"
-        headers = {"Authentication": f"owl {self._token}"}
-
         self.logger.debug("Getting pipeline definition for %s", name)
-        try:
-            async with timeout(self.heartbeat // 2):
-                async with self.session.get(url, headers=headers) as resp:
-                    res = await resp.json()
-        except ClientConnectorError:
-            self.logger.error("Unable to connect to API at %s", url)
-            return
-        except asyncio.TimeoutError:
-            self.logger.error("API request took too long. Cancelled")
-            return
+        root = f"/api/pdef/get/{name}"
+        res = await self._make_request(root)
 
         if "detail" in res:
             self.logger.error("Pipeline not found %s", name)
