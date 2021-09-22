@@ -5,6 +5,12 @@ from email.message import EmailMessage
 
 import aiosmtplib
 
+email_txt = """
+Your pipeline {jobid} has finished with status: {status}.
+
+{result}
+"""
+
 
 def safe_loop():
     """Run coroutine in a safe loop.
@@ -72,9 +78,6 @@ def slurm_configure(info, **kwargs):
 
 
 async def send_email(config, pipeline):
-    import sys
-
-    print(">>>>>>>>>>>>>>", config, pipeline["userinfo"], file=sys.stderr)
     if not config["enabled"]:
         return
 
@@ -89,11 +92,12 @@ async def send_email(config, pipeline):
 
     jobid = pipeline["uid"]
     status = pipeline["status"]
+    result = pipeline.get("heartbeat", {}).get("result", "")
 
     message = EmailMessage()
     message["From"] = config.get("from_address", "owl@localhost")
     message["To"] = to_address
     message["Subject"] = f"Pipeline {jobid}: {status}"
-    message.set_content("Sent via aiosmtplib")
+    message.set_content(email_txt.format(jobid=jobid, status=status, result=result))
 
     await aiosmtplib.send(message, hostname=config["host"], port=config["port"])
