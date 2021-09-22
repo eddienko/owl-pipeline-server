@@ -16,7 +16,7 @@ from owl_server import __version__, k8s
 from owl_server.config import config, refresh
 from owl_server.log import LogFilter, PipelineFileHandler
 
-from .utils import safe_loop
+from .utils import safe_loop, send_email
 
 MAX_PIPELINES = 999
 
@@ -371,7 +371,7 @@ class Scheduler:
         pipe
             pipeline definition
         """
-        uid = pipe["id"]
+        uid = int(pipe["id"])
         user = pipe["user"]
         pipe_config = pipe["config"]
 
@@ -412,8 +412,8 @@ class Scheduler:
             extra_pip_packages = extra_pip_packages + f" owl-pipeline-server=={__version__}"
 
         env_vars = {
-            "UID": uid,
-            "JOBID": uid,
+            "UID": f"{uid}",
+            "JOBID": f"{uid}",
             "USERNAME": user,
             "LOGLEVEL": config.loglevel,
             "PIPEDEF": json.dumps(pipe_config),
@@ -458,9 +458,10 @@ class Scheduler:
         self.pipelines[uid] = {
             "last": time.monotonic(),
             "heartbeat": heartbeat,
-            "userinfo": userinfo,
+            "userinfo": userinfo[0],
             "job": status,
             "name": jobname,
+            "uid": uid,
             "handler": handler
         }
         await self.update_pipeline(uid, heartbeat["status"])
@@ -483,6 +484,9 @@ class Scheduler:
         await self.update_pipeline(uid, status)
         if uid in self.pipelines:
             await self._tear_pipeline(uid)
+            pipeline = self.pipelines.pop(uid)
+            pipeline["status"] = status
+            await send_email(self._smtp, pipeline)
 
     async def _tear_pipeline(self, uid: int):
         if uid not in self.pipelines:
@@ -490,12 +494,11 @@ class Scheduler:
             return
         with suppress(Exception):
             jobname = self.pipelines[uid]["name"]
+            self.logger.debug("Deleting job %s", jobname)
             await k8s.kube_delete_job(jobname, self.namespace)
         with suppress(Exception):
             handler = self.pipelines[uid]["handler"]
             self.logger.removeHandler(handler)
-        self.pipelines.pop(uid)
-
 
     @safe_loop()
     async def heartbeat_pipeline(self, uid):

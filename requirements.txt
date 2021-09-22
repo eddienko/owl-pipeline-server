@@ -18,3 +18,4 @@ sqlalchemy
 transaction
 uvicorn
 voluptuous
+aiosmtplib
