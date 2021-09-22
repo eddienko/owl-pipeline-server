@@ -1,6 +1,9 @@
 import functools
 import os
 import subprocess
+from email.message import EmailMessage
+
+import aiosmtplib
 
 
 def safe_loop():
@@ -66,3 +69,31 @@ def slurm_configure(info, **kwargs):
         subprocess.run("sudo slurmctld".split())
     else:
         subprocess.run("sudo slurmd".split())
+
+
+async def send_email(config, pipeline):
+    import sys
+
+    print(">>>>>>>>>>>>>>", config, pipeline["userinfo"], file=sys.stderr)
+    if not config["enabled"]:
+        return
+
+    try:
+        userinfo = pipeline["userinfo"]
+        to_address = userinfo["email"]
+    except Exception:
+        return
+
+    if not to_address:
+        return
+
+    jobid = pipeline["uid"]
+    status = pipeline["status"]
+
+    message = EmailMessage()
+    message["From"] = config.get("from_address", "owl@localhost")
+    message["To"] = to_address
+    message["Subject"] = f"Pipeline {jobid}: {status}"
+    message.set_content("Sent via aiosmtplib")
+
+    await aiosmtplib.send(message, hostname=config["host"], port=config["port"])
