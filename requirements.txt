@@ -21,4 +21,4 @@ voluptuous
 aiosmtplib
 python-json-logger
 requests-futures
-dateutil
+python-dateutil
