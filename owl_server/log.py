@@ -169,19 +169,19 @@ formatters:
     format: "%(asctime)s %(topic)s %(jobid)% %(levelname)s %(name)s %(funcName)s %(message)s"
 loggers:
   owl.daemon.pipeline:
-    handlers: [console, file, zmq, http]
+    handlers: [console, zmq, http]
     level: ${LOGLEVEL}
     propagate: false
   owl.cli:
-    handlers: [console, file, zmq]
+    handlers: [console, zmq, http]
     level: ${LOGLEVEL}
     propagate: false
   distributed:
-    handlers: [console, file, zmq]
+    handlers: [console, zmq, http]
     level: INFO
     propagate: false
   root:
-    handlers: [console, file, zmq]
+    handlers: [console, zmq, http]
     level: INFO
     propagate: false
 """,
