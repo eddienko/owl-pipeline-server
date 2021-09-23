@@ -25,6 +25,7 @@ OWL_USERNAME = "owl"
 database = databases.Database(config.dbi)
 hostname = socket.gethostname()
 local_ip = socket.gethostbyname(hostname)
+db.User.name = config.custom_user_table or db.User.name
 
 
 def authenticate(admin=False):

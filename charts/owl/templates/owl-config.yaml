@@ -17,8 +17,9 @@ data:
     {{- end }}
     loglevel: {{ .Values.loglevel }}
     heartbeat: {{ .Values.heartbeat }}
-    max_pipelines: 6
+    max_pipelines: {{ .Values.max_pipelines }}
     dbi: {{ .Values.dbi }}
+    custom_user_table: {{ .Values.custom_user_table }}
     prometheus: {{ .Values.prometheus }}
 
     env:

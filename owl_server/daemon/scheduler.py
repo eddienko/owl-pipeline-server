@@ -17,7 +17,7 @@ from owl_server.config import config, refresh
 
 from .utils import safe_loop, send_email
 
-MAX_PIPELINES = 999
+MAX_PIPELINES = 99
 
 
 class Scheduler:
