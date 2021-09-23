@@ -19,3 +19,6 @@ transaction
 uvicorn
 voluptuous
 aiosmtplib
+python-json-logger
+requests-futures
+dateutil

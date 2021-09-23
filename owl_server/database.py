@@ -31,6 +31,17 @@ PipelineDefinition = sqlalchemy.Table(
     # sqlalchemy.Column("version", sqlalchemy.String(length=32), nullable=False),
 )
 
+PipelineLogs = sqlalchemy.Table(
+    "pipeline_logs",
+    metadata,
+    sqlalchemy.Column("id", sqlalchemy.Integer, primary_key=True),
+    sqlalchemy.Column("jobid", sqlalchemy.Integer, nullable=False, index=True),
+    sqlalchemy.Column("level", sqlalchemy.String(length=16), nullable=False),
+    sqlalchemy.Column("func_name", sqlalchemy.String(length=80)),
+    sqlalchemy.Column("message", sqlalchemy.Text),
+    sqlalchemy.Column("timestamp", sqlalchemy.DateTime, nullable=False),
+)
+
 ContainerImage = sqlalchemy.Table(
     "container_image",
     metadata,
@@ -58,3 +69,4 @@ User = sqlalchemy.Table(
     sqlalchemy.Column("is_admin", sqlalchemy.Boolean, default=False),
     sqlalchemy.Column("active", sqlalchemy.Boolean, default=True),
 )
+

@@ -1,15 +1,18 @@
 import asyncio
 import functools
+import ipaddress
 import json
 import os
+import socket
 from contextlib import suppress
 from datetime import datetime
 from typing import Any, Dict, Optional
 
 import databases
+import dateutil.parser
 import zmq
 import zmq.asyncio
-from fastapi import FastAPI, Header, HTTPException, status
+from fastapi import Body, FastAPI, Header, HTTPException, Request, status
 from owl_server.config import config
 from pydantic import BaseModel
 
@@ -19,6 +22,8 @@ from ..crypto import PBKDF2PasswordHasher, get_random_string
 OWL_USERNAME = "owl"
 
 database = databases.Database(config.dbi)
+hostname = socket.gethostname()
+local_ip = socket.gethostbyname(hostname)
 
 
 def authenticate(admin=False):
@@ -181,6 +186,33 @@ async def pipeline_status_get(uid: int, authentication=Header(None), username=No
     q = db.Pipeline.select().where(db.Pipeline.c.id == uid)
     res = await database.fetch_one(q)
     return res
+
+
+@app.post("/api/logger")
+async def logger(payload: str = Body(...), request: Request = None):
+    ip = ipaddress.ip_address(request.client.host)
+    if not ip.is_private:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized",
+        )
+
+    if not isinstance(payload, dict):
+        payload = json.loads(payload)
+
+    if not isinstance(payload, dict):
+        payload = json.loads(payload)
+
+    if payload["topic"] not in ["PIPELINE"]:
+        return {}
+
+    q = db.PipelineLogs.insert().values(
+        jobid=int(payload["jobid"]),
+        timestamp=dateutil.parser.parse(payload["asctime"]),
+        func_name=payload["funcName"],
+        message=payload["message"],
+        level=payload["levelname"],
+    )
+    await database.execute(q)
 
 
 @app.get("/api/pipeline/log/{uid}")
