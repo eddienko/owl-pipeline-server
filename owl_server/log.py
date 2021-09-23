@@ -142,13 +142,6 @@ handlers:
     formatter: standard
     stream: 'ext://sys.stderr'
     filters: ["filter_pipeline"]
-  file:
-    class: owl_server.log.TimeRotatingFileHandler
-    filename: /tmp/pipeline.log
-    formatter: standard
-    when: "d"
-    backupCount: 7
-    filters: ["filter_pipeline"]
   zmq:
     class: owl_server.log.PUBHandler
     address: tcp://owl-scheduler:7002

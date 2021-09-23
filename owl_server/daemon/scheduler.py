@@ -14,7 +14,6 @@ from aiohttp.client_exceptions import ClientConnectorError
 from async_timeout import timeout
 from owl_server import __version__, k8s
 from owl_server.config import config, refresh
-from owl_server.log import LogFilter, PipelineFileHandler
 
 from .utils import safe_loop, send_email
 
@@ -329,16 +328,6 @@ class Scheduler:
         self.live_router.bind(self.live_addr)
         self.logger.debug("Liveness probe address: %s", self.live_addr)
 
-    def _add_handler(self, uid):
-        logfile = f"/var/run/owl/logs/pipeline_{uid}.log"
-        handler = PipelineFileHandler(logfile)
-        formatter = self.logger.handlers[1].formatter
-        logfilter = LogFilter(topic="PIPELINE", jobid=f"{uid}")
-        handler.setFormatter(formatter)
-        handler.addFilter(logfilter)
-        self.logger.addHandler(handler)
-        return handler
-
     async def _make_request(self, path, method=None, data=None):
         method = method or "GET"
         url = f"http://{self.env.OWL_API_SERVICE_HOST}:{self.env.OWL_API_SERVICE_PORT}{path}"
@@ -454,8 +443,6 @@ class Scheduler:
 
         heartbeat = {"status": "STARTING"}
 
-        handler = self._add_handler(uid)
-
         self.pipelines[uid] = {
             "last": time.monotonic(),
             "heartbeat": heartbeat,
@@ -463,7 +450,6 @@ class Scheduler:
             "job": status,
             "name": jobname,
             "uid": uid,
-            "handler": handler
         }
         await self.update_pipeline(uid, heartbeat["status"])
 
@@ -497,9 +483,6 @@ class Scheduler:
             jobname = self.pipelines[uid]["name"]
             self.logger.debug("Deleting job %s", jobname)
             await k8s.kube_delete_job(jobname, self.namespace)
-        with suppress(Exception):
-            handler = self.pipelines[uid]["handler"]
-            self.logger.removeHandler(handler)
 
     @safe_loop()
     async def heartbeat_pipeline(self, uid):
