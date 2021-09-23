@@ -18,11 +18,20 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-      - name: Build and push
-        id: docker_build
+      - name: Build and push owl-server
+        id: docker_build_server
         uses: docker/build-push-action@v2
         with:
           push: true
           tags: |
             imaxt/owl-server:0.8.3
             imaxt/owl-server:latest
+      - name: Build and push owl-slurm
+        id: docker_build_slurm
+        uses: docker/build-push-action@v2
+        with:
+          file: ./Dockerfile.slurm
+          push: true
+          tags: |
+            imaxt/owl-slurm:0.8.3
+            imaxt/owl-slurm:latest
