@@ -89,7 +89,7 @@ def slurm_configure(info, **kwargs):
                         v["POD_NAME"],
                         v["POD_IP"],
                         v["CONTAINER_CPU_REQUEST"],
-                        v["CONTAINER_MEMORY_LIMIT"],
+                        int(int(v["CONTAINER_MEMORY_LIMIT"]) * 1.048576),
                     )
                 )
         else:
