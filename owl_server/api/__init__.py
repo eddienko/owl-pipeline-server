@@ -13,6 +13,7 @@ import dateutil.parser
 import zmq
 import zmq.asyncio
 from fastapi import Body, FastAPI, Header, HTTPException, Request, status
+from fastapi.responses import StreamingResponse
 from owl_server.config import config
 from pydantic import BaseModel
 
@@ -215,15 +216,19 @@ async def logger(payload: str = Body(...), request: Request = None):
     await database.execute(q)
 
 
+async def query_stream(q):
+    async for row in database.iterate(q):
+        out = json.dumps(dict(row), default=str)
+        yield f"{out}\n"
+
+
 @app.get("/api/pipeline/log/{uid}")
 @authenticate()
 async def pipeline_log(uid: int, authentication=Header(None), username=None):
     # TODO: check that pipeline user == username
-    await asyncio.sleep(0)
-    log = ""
-    with suppress(Exception):
-        log = open(f"/var/run/owl/logs/pipeline_{uid}.log").read()
-    return {"log": log}
+    q = db.PipelineLogs.select().where(db.PipelineLogs.c.jobid == uid)
+    q = q.order_by(db.PipelineLogs.c.id.asc())
+    return StreamingResponse(query_stream(q))
 
 
 @app.post("/api/pipeline/add")
