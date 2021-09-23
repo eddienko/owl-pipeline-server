@@ -43,11 +43,7 @@ class register_pipeline:
         @wraps(func)
         def wrapper(config: Dict, cluster=None):
 
-            if self.schema is not None:
-                _config = self.schema(config)
-            else:
-                _config = config
-
+            _config = self.schema(config) if self.schema is not None else config
             if cluster is not None:
                 try:
                     client = Client(cluster.scheduler_address)
