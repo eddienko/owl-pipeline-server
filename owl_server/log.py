@@ -2,11 +2,13 @@ import json
 import logging.config
 import logging.handlers
 import os
+import traceback
 from contextlib import suppress
 
 import coloredlogs
 import yaml
 import zmq
+from requests_futures.sessions import FuturesSession
 
 from . import utils  # noqa: F401
 
@@ -76,10 +78,19 @@ handlers:
     when: "d"
     backupCount: 7
     filters: ["filter_scheduler"]
+  http:
+    class: owl_server.log.HTTPHandler
+    host: ${OWL_API_SERVICE_HOST}
+    port: ${OWL_API_SERVICE_PORT}
+    formatter: json
+    filters: ["filter_scheduler"]
 formatters:
   standard:
     class: owl_server.log.ColoredFormatter
     format: "%(asctime)s %(topic)s %(levelname)s %(name)s %(funcName)s - %(message)s"
+  json:
+    class: pythonjsonlogger.jsonlogger.JsonFormatter
+    format: "%(asctime)s %(topic)s %(levelname)s %(name)s %(funcName)s %(message)s"
 loggers:
   owl.daemon.scheduler:
     handlers: [console, file]
@@ -143,13 +154,22 @@ handlers:
     address: tcp://owl-scheduler:7002
     formatter: standard
     filters: ["filter_pipeline"]
+  http:
+    class: owl_server.log.HTTPHandler
+    host: ${OWL_API_SERVICE_HOST}
+    port: ${OWL_API_SERVICE_PORT}
+    formatter: json
+    filters: ["filter_pipeline"]
 formatters:
   standard:
     class: owl_server.log.ColoredFormatter
     format: "%(asctime)s %(topic)s %(levelname)s %(name)s %(funcName)s - %(message)s"
+  json:
+    class: pythonjsonlogger.jsonlogger.JsonFormatter
+    format: "%(asctime)s %(topic)s %(jobid)% %(levelname)s %(name)s %(funcName)s %(message)s"
 loggers:
   owl.daemon.pipeline:
-    handlers: [console, file, zmq]
+    handlers: [console, file, zmq, http]
     level: ${LOGLEVEL}
     propagate: false
   owl.cli:
@@ -317,3 +337,27 @@ class PUBHandler(logging.Handler):
             self.socket.close()
             self.socket = None
             self.release()
+
+
+class HTTPHandler(logging.Handler):
+    def __init__(self, host, port):
+        super().__init__()
+        self.host = host
+        self.port = port
+        self.url = f"http://{host}:{port}/api/logger"
+        self.session = FuturesSession()
+
+    def get_full_message(self, record):
+        if record.exc_info:
+            return "\n".join(traceback.format_exception(*record.exc_info))
+        else:
+            return record.getMessage()
+
+    def emit(self, record):
+        payload = self.format(record)
+        try:
+            self.session.post(self.url, json=json.dumps(payload))
+        except (KeyboardInterrupt, SystemExit):
+            raise
+        except Exception:
+            self.handleError(record)
