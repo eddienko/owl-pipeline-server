@@ -3,11 +3,9 @@ import logging.config
 import logging.handlers
 import os
 import traceback
-from contextlib import suppress
 
 import coloredlogs
 import yaml
-import zmq
 from requests_futures.sessions import FuturesSession
 
 from . import utils  # noqa: F401
@@ -142,11 +140,6 @@ handlers:
     formatter: standard
     stream: 'ext://sys.stderr'
     filters: ["filter_pipeline"]
-  zmq:
-    class: owl_server.log.PUBHandler
-    address: tcp://owl-scheduler:7002
-    formatter: standard
-    filters: ["filter_pipeline"]
   http:
     class: owl_server.log.HTTPHandler
     host: ${OWL_API_SERVICE_HOST}
@@ -162,19 +155,19 @@ formatters:
     format: "%(asctime)s %(topic)s %(jobid)% %(levelname)s %(name)s %(funcName)s %(message)s"
 loggers:
   owl.daemon.pipeline:
-    handlers: [console, zmq, http]
+    handlers: [console, http]
     level: ${LOGLEVEL}
     propagate: false
   owl.cli:
-    handlers: [console, zmq, http]
+    handlers: [console, http]
     level: ${LOGLEVEL}
     propagate: false
   distributed:
-    handlers: [console, zmq, http]
+    handlers: [console, http]
     level: INFO
     propagate: false
   root:
-    handlers: [console, zmq, http]
+    handlers: [console, http]
     level: INFO
     propagate: false
 """,
@@ -275,61 +268,6 @@ class ColoredFormatter(coloredlogs.ColoredFormatter):
         except AttributeError:
             record.topic = ""
         return super().format(record)
-
-
-class PUBHandler(logging.Handler):
-    def __init__(self, address):
-        super().__init__()
-        self.address = address
-        self.socket = None
-
-    def createSocket(self):
-        with suppress(zmq.ZMQError):
-            self.ctx = zmq.Context()
-            self.socket = self.ctx.socket(zmq.PUB)
-            self.socket.connect(self.address)
-
-    def makeJSON(self, record):
-        ei = record.exc_info
-        if ei:
-            # just to get traceback text into record.exc_text ...
-            self.format(record)
-        d = dict(record.__dict__)
-        d["msg"] = record.getMessage()
-        d["args"] = None
-        d["exc_info"] = None
-        # delete 'message' if present: redundant with 'msg'
-        d.pop("message", None)
-        return json.dumps(d)
-
-    def send(self, s, topic):
-        if self.socket is None:
-            self.createSocket()
-        if self.socket:
-            topic = f"{topic}".encode("utf-8")
-            msg = s.encode("utf-8")
-            self.socket.send_multipart([topic, msg])
-
-    def handleError(self, record):
-        self.socket.close(linger=0)
-        self.socket = None
-
-    def emit(self, record):
-        try:
-            s = self.makeJSON(record)
-            self.send(s, record.topic)
-        except Exception:
-            self.handleError(record)
-
-    def release(self):
-        with suppress(Exception):
-            self.lock.release()
-
-    def close(self):
-        if self.socket:
-            self.socket.close()
-            self.socket = None
-            self.release()
 
 
 class HTTPHandler(logging.Handler):
