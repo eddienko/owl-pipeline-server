@@ -15,6 +15,7 @@ fullnameOverride: ""
 
 loglevel: DEBUG
 dbi: sqlite:////var/run/owl/sqlite.db
+custom_user_table:
 heartbeat: 30
 prometheus: ""
 token:
