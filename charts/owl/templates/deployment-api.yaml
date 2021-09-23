@@ -106,8 +106,12 @@ spec:
           {{- end }}
       volumes:
         - name: owl-home
+          {{- if eq .Values.api.persistence "true" }}
           persistentVolumeClaim:
-            claimName: owl-home
+-            claimName: owl-home
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
         - name: owl-config
           configMap:
             name: {{ include "owl.fullname" . }}-owl-config

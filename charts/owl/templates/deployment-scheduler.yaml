@@ -6,7 +6,7 @@ metadata:
     {{- include "owl.labels.scheduler" . | nindent 4 }}
 spec:
   {{- if not .Values.autoscaling.enabled }}
-  replicas: {{ .Values.replicaCount }}
+  replicas: 1
   {{- end }}
   selector:
     matchLabels:
@@ -75,8 +75,7 @@ spec:
             {{- toYaml .Values.scheduler.resources | nindent 12 }}
       volumes:
         - name: owl-home
-          persistentVolumeClaim:
-            claimName: owl-home
+          emptyDir: {}
         - name: owl-config
           configMap:
             name: {{ include "owl.fullname" . }}-owl-config
