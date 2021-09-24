@@ -58,8 +58,11 @@ RUN chmod a+rx /usr/local/bin/start.sh
 
 ENV PATH=/user/.local/bin:$PATH
 
+
 WORKDIR /home/user
+USER root
 
 ENTRYPOINT ["/init", "/usr/local/bin/start.sh"]
+CMD ["/bin/bash"]
 
 
