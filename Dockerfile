@@ -63,6 +63,5 @@ WORKDIR /home/user
 USER root
 
 ENTRYPOINT ["/init", "/usr/local/bin/start.sh"]
-CMD ["/bin/bash"]
 
 

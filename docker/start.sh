@@ -5,11 +5,10 @@
 #    ${CMD_INIT}
 #fi
 
-CMD=${@:-"/bin/bash"}
 
 if [[ ! -z "${RUN_AS_ROOT:-}" ]]
 then
-  exec "$CMD"
+  exec "$@"
 else
-  sudo -i -E -H -u user "$CMD"
+  sudo -i -E -H -u user "$@"
 fi
