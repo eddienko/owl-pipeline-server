@@ -13,6 +13,13 @@ jobs:
         uses: docker/setup-qemu-action@v1
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v1
+      - name: Cache Docker layers
+        uses: actions/cache@v2
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-buildx-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-buildx-
       - name: Login to DockerHub
         uses: docker/login-action@v1
         with:
@@ -23,40 +30,57 @@ jobs:
         uses: docker/build-push-action@v2
         with:
           push: true
-          build_args: |
+          build-args: |
             BASE_CONTAINER=ubuntu:18.04
           tags: |
             imaxt/owl-server:0.8.3
             imaxt/owl-server:latest
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,dest=/tmp/.buildx-cache-new
       - name: Build and push owl-server-gpu
         id: docker_build_server_gpu
         uses: docker/build-push-action@v2
         with:
           push: true
-          build_args: |
+          build-args: |
             BASE_CONTAINER=nvidia/cudagl:10.1-runtime-ubuntu18.04
           tags: |
             imaxt/owl-server-gpu:0.8.3
             imaxt/owl-server-gpu:latest
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,dest=/tmp/.buildx-cache-new
       - name: Build and push owl-slurm
         id: docker_build_slurm
         uses: docker/build-push-action@v2
         with:
           file: ./Dockerfile.slurm
           push: true
-          build_args: |
+          build-args: |
             BASE_CONTAINER=imaxt/owl-server:latest
           tags: |
             imaxt/owl-slurm:0.8.3
             imaxt/owl-slurm:latest
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,dest=/tmp/.buildx-cache-new
       - name: Build and push owl-slurm-gpu
         id: docker_build_slurm_gpu
         uses: docker/build-push-action@v2
         with:
           file: ./Dockerfile.slurm
           push: true
-          build_args: |
+          build-args: |
             BASE_CONTAINER=imaxt/owl-server-gpu:latest
           tags: |
             imaxt/owl-slurm-gpu:0.8.3
             imaxt/owl-slurm-gpu:latest
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,dest=/tmp/.buildx-cache-new
+      # This ugly bit is necessary if you don't want your cache to grow forever
+      # till it hits GitHub's limit of 5GB.
+      # Temp fix
+      # https://github.com/docker/build-push-action/issues/252
+      # https://github.com/moby/buildkit/issues/1896
+      - name: Move cache
+        run: |
+          rm -rf /tmp/.buildx-cache
+          mv /tmp/.buildx-cache-new /tmp/.buildx-cache
