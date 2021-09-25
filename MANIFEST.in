@@ -1,5 +1,5 @@
 recursive-include owl_server *.py
-recursive-include conf *.yaml
+recursive-include owl_server *.html
 
 include setup.py
 include setup.cfg

@@ -450,6 +450,7 @@ class Scheduler:
             "job": status,
             "name": jobname,
             "uid": uid,
+            "pdef": pipe_config,
         }
         await self.update_pipeline(uid, heartbeat["status"])
 

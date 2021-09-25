@@ -4,6 +4,7 @@ import subprocess
 from email.message import EmailMessage
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+from string import Template
 
 import aiosmtplib
 
@@ -19,7 +20,7 @@ You can obtain the full pipeline log output with the command
 owl job logs {jobid}
 """
 
-email_html = """<html><body>
+email_html_old = """<html><body>
 <p>Your pipeline with ID {jobid} has completed with status: <b>{status}</b>.</p>
 
 <p>If the pipeline returns some result, please find it below.</p>
@@ -35,6 +36,9 @@ owl job logs {jobid}
 </pre>
 </body></html>
 """
+
+this_dir = os.path.dirname(os.path.abspath(__file__))
+email_html = Template(open(f"{this_dir}/email_template.html", "r").read())
 
 
 def safe_loop():
@@ -116,8 +120,18 @@ async def send_email(config, pipeline):
         return
 
     jobid = pipeline["uid"]
-    status = pipeline["status"]
-    result = pipeline.get("heartbeat", {}).get("result", "")
+    status = pipeline["status"].lower()
+    try:
+        elapsed = int(pipeline["heartbeat"]["elapsed"])
+    except KeyError:
+        elapsed = 0
+    username = userinfo["username"]
+    name = pipeline["pdef"]["name"]
+
+    try:
+        result = pipeline["heartbeat"]["result"]
+    except KeyError:
+        result = ""
 
     message = MIMEMultipart("alternative")
     message["From"] = config.get("from_address", "owl@localhost")
@@ -127,7 +141,16 @@ async def send_email(config, pipeline):
         email_txt.format(jobid=jobid, status=status, result=result), "plain", "utf-8"
     )
     message_html = MIMEText(
-        email_html.format(jobid=jobid, status=status, result=result), "html", "utf-8"
+        email_html.substitute(
+            jobid=jobid,
+            status=status,
+            result=result,
+            elapsed=elapsed,
+            username=username,
+            name=name,
+        ),
+        "html",
+        "utf-8",
     )
     message.attach(message_txt)
     message.attach(message_html)
