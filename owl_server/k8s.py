@@ -129,14 +129,14 @@ def kube_create_job_object(
     else:
         resourcesReq = None
 
-    if (security_context := extraConfig.securityContext) is not None:
-        secReq = _make_spec_from_dict(security_context, client.V1PodSecurityContext)
-    else:
-        secReq = None
-
     volume_mounts = []
     for vm in extraConfig.volumeMounts:
         volume_mounts.append(_make_spec_from_dict(vm, client.V1VolumeMount))
+
+    if (security_context := extraConfig.securityContext) is not None:
+        secReq = _make_spec_from_dict(security_context, client.V1SecurityContext)
+    else:
+        secReq = None
 
     container = client.V1Container(
         name=container_name,
@@ -146,11 +146,17 @@ def kube_create_job_object(
         args=command.split(),
         resources=resourcesReq,
         volume_mounts=volume_mounts,
+        security_context=secReq,
     )
 
     volumes = []
     for vol in extraConfig.volumes:
         volumes.append(_make_spec_from_dict(vol, client.V1Volume))
+
+    if (pod_security_context := extraConfig.podSecurityContext) is not None:
+        secReq = _make_spec_from_dict(pod_security_context, client.V1PodSecurityContext)
+    else:
+        secReq = None
 
     template.template.spec = client.V1PodSpec(
         containers=[container],

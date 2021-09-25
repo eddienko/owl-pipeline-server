@@ -37,6 +37,8 @@ data:
     pipeline:
       securityContext:
         {{- toYaml .Values.securityContext | nindent 8 }}
+      podSecurityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
       resources:
         {{- toYaml .Values.pipeline.resources | nindent 8 }}
       serviceAccountName: {{ include "owl.serviceAccountName" . }}
