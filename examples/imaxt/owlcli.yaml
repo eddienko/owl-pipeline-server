@@ -5,8 +5,8 @@ metadata:
 spec:
   containers:
   - name: owlcli
-    image: imaxt/owl-server:0.7.1
-    args: ["/bin/bash", "-c", "echo PS1=\"'owlcli> '\" >~/.bash_aliases && trap : TERM INT; sleep infinity & wait"]
+    image: imaxt/owl-server:0.8.3
+    args: ["echo PS1=\"'owlcli> '\" >~/.bash_aliases && env >&/tmp/env && trap : TERM INT; sleep infinity & wait"]
     imagePullPolicy: IfNotPresent
     env:
       - name: EXTRA_PIP_PACKAGES
