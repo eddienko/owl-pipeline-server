@@ -1,4 +1,4 @@
-FROM imaxt/owl-server:latest
+FROM imaxt/owl-server:0.8.3
 
 RUN DEBIAN_FRONTEND=noninteractive
 
