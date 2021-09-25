@@ -1,30 +1,21 @@
-FROM imaxt/owl-server:0.8.3
+FROM imaxt/owl-server:latest
 
 RUN DEBIAN_FRONTEND=noninteractive
-
-CMD ["/bin/bash"]
 
 USER root
 
 # Install all base dependencies
-RUN apt-get update && apt install sudo git gcc make ruby ruby-dev python3 \
-    libpam0g-dev libmariadb-client-lgpl-dev libmysqlclient-dev wget vim -y
+RUN apt-get update && \
+    apt install -yq  --no-install-recommends \
+    gcc make ruby ruby-dev python3 \
+    libpam0g-dev libmariadb-client-lgpl-dev libmysqlclient-dev \
+    libmunge-dev libmunge2 munge \
+    libhdf5-serial-dev hdf5-tools \
+    mariadb-server \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # install gem needed for dpkg
 RUN gem install fpm
-
-# Install munge
-RUN apt-get install libmunge-dev libmunge2 munge -y
-
-# Install hdf5
-RUN apt-get install libhdf5-serial-dev hdf5-tools -y
-
-
-# Install MariaDB for slurm accounting (as the instructions state, change the password)
-RUN apt-get install mariadb-server -y
-
-# RUN service mysql start
-# RUN service munge start
 
 RUN mkdir /slurm
 
@@ -65,18 +56,12 @@ RUN rm -rf slurm-20.02.7.tar.bz2
 RUN rm -rf slurm-20.02.7_1.0_amd64.deb
 
 COPY docker/initialize-mariadb.sql initialize-mariadb.sql
-COPY docker/start-slurm-cluster.sh start-slurm-cluster.sh
 COPY docker/slurm.conf /etc/slurm/slurm.conf
-RUN chmod +x start-slurm-cluster.sh
 RUN chmod a+rw /etc/slurm/slurm.conf
-ENV CMD_INIT=/slurm/start-slurm-cluster.sh
+ADD docker/etc.slurm /etc
 
 RUN echo "Cmnd_Alias MUNGE = /usr/sbin/service munge start\nuser    ALL=(ALL) NOPASSWD: MUNGE" > /etc/sudoers.d/munge
 RUN echo "Cmnd_Alias MYSQL = /usr/sbin/service mysql start, /usr/bin/mysql\nuser    ALL=(ALL) NOPASSWD: MYSQL" > /etc/sudoers.d/mysql
 RUN echo "Cmnd_Alias SLURM = /usr/sbin/service slurmdbd start, /usr/sbin/slurmctld, /usr/sbin/slurmd\nuser    ALL=(ALL) NOPASSWD: SLURM" > /etc/sudoers.d/slurm
 
-
 WORKDIR /home/user
-
-USER 1000
-

@@ -225,6 +225,7 @@ class Pipeline:
                 self.pipe_socket.close(linger=0)
 
     async def setup_slurm_cluster(self):
+        self.logger.info("Setting up slurm cluster")
         async with Client(self.cluster.scheduler.address, asynchronous=True) as client:
             info = await client.run_on_scheduler(slurm_envvars)
             workers_info = await client.run(slurm_envvars)

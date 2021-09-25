@@ -40,7 +40,11 @@ def start_loop(pdef):
     loop.add_signal_handler(signal.SIGTERM, pipeline.close)
     loop.add_signal_handler(signal.SIGINT, pipeline.close)
 
-    res = loop.run_until_complete(pipeline.run())
+    try:
+        res = loop.run_until_complete(pipeline.run())
+    except Exception:
+        pipeline.close()
+        raise
     loop.close()
 
     if res in ["ERROR"]:
