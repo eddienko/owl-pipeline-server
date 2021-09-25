@@ -27,7 +27,7 @@ jobs:
             BASE_CONTAINER=ubuntu:18.04
           tags: |
             imaxt/owl-server:0.8.3
-            imaxt/owl-server:ubuntu-latest
+            imaxt/owl-server:latest
       - name: Build and push owl-server-gpu
         id: docker_build_server_gpu
         uses: docker/build-push-action@v2

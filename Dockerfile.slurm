@@ -1,4 +1,5 @@
-FROM imaxt/owl-server:0.8.3
+ARG BASE_CONTAINER=imaxt/owl-server:0.8.3
+FROM ${BASE_CONTAINER}
 
 RUN DEBIAN_FRONTEND=noninteractive
 
@@ -41,14 +42,14 @@ RUN mkdir -p /etc/slurm /etc/slurm/prolog.d /etc/slurm/epilog.d /var/spool/slurm
     /var/spool/slurm/d /var/log/slurm /var/run/slurm
 
 # Get example files and copy to corresponding directories
-RUN git clone https://github.com/mknoxnv/ubuntu-slurm.git
-RUN cp ubuntu-slurm/slurmd.init /etc/init.d/slurmd
-RUN cp ubuntu-slurm/slurm.default /etc/default/slurm
-RUN chmod 755 /etc/init.d/slurmd
-RUN cp ubuntu-slurm/slurmdbd.init /etc/init.d/slurmdbd
-RUN chmod 755 /etc/init.d/slurmdbd
-RUN cp ubuntu-slurm/slurmdbd.service /etc/systemd/system/
-RUN cp ubuntu-slurm/slurmdbd.conf /etc/slurm/
+RUN git clone https://github.com/mknoxnv/ubuntu-slurm.git && \
+    cp ubuntu-slurm/slurmd.init /etc/init.d/slurmd && \
+    cp ubuntu-slurm/slurm.default /etc/default/slurm && \
+    chmod 755 /etc/init.d/slurmd && \
+    cp ubuntu-slurm/slurmdbd.init /etc/init.d/slurmdbd && \
+    chmod 755 /etc/init.d/slurmdbd && \
+    cp ubuntu-slurm/slurmdbd.service /etc/systemd/system/ && \
+    cp ubuntu-slurm/slurmdbd.conf /etc/slurm/
 
 RUN chown slurm /var/spool/slurm/ctld /var/spool/slurm/d /var/log/slurm /var/run/slurm
 
@@ -59,9 +60,14 @@ COPY docker/initialize-mariadb.sql initialize-mariadb.sql
 COPY docker/slurm.conf /etc/slurm/slurm.conf
 RUN chmod a+rw /etc/slurm/slurm.conf
 ADD docker/etc.slurm /etc
+RUN chmod -R +x /etc/cont-init.d && chmod -R +x /etc/cont-finish.d
 
-RUN echo "Cmnd_Alias MUNGE = /usr/sbin/service munge start\nuser    ALL=(ALL) NOPASSWD: MUNGE" > /etc/sudoers.d/munge
-RUN echo "Cmnd_Alias MYSQL = /usr/sbin/service mysql start, /usr/bin/mysql\nuser    ALL=(ALL) NOPASSWD: MYSQL" > /etc/sudoers.d/mysql
-RUN echo "Cmnd_Alias SLURM = /usr/sbin/service slurmdbd start, /usr/sbin/slurmctld, /usr/sbin/slurmd\nuser    ALL=(ALL) NOPASSWD: SLURM" > /etc/sudoers.d/slurm
+RUN echo "Cmnd_Alias MUNGE = /usr/sbin/service munge start, /usr/sbin/service munge stop\nuser    ALL=(ALL) NOPASSWD: MUNGE" > /etc/sudoers.d/munge && \
+    echo "Cmnd_Alias MYSQL = /usr/sbin/service mysql start, /usr/sbin/service mysql stop, /usr/bin/mysql\nuser    ALL=(ALL) NOPASSWD: MYSQL" > /etc/sudoers.d/mysql && \
+    echo "Cmnd_Alias SLURM = /usr/sbin/service slurmdbd start, /usr/sbin/service slurmdbd stop, /usr/sbin/slurmctld, /usr/sbin/slurmd\nuser    ALL=(ALL) NOPASSWD: SLURM" > /etc/sudoers.d/slurm && \
+    chmod o-r /etc/sudoers.d/*
 
 WORKDIR /home/user
+USER 1000
+
+ENTRYPOINT ["/init", "/usr/local/bin/start.sh"]
