@@ -147,6 +147,7 @@ class User(BaseModel):
 class Pipeline(BaseModel):
     config: Optional[Dict[str, Any]] = None
     status: Optional[str] = None
+    heartbeat: Optional[Dict[str, Any]] = None
 
 
 class PipeDef(BaseModel):
@@ -280,7 +281,13 @@ async def pipeline_update(
     elif res["status"] not in ["TO_CANCEL"]:
         update = True
     if update:
-        q = db.Pipeline.update().where(db.Pipeline.c.id == uid).values(status=new)
+        hb = pipe.heartbeat or res["heartbeat"]
+        hb = hb or {}
+        q = (
+            db.Pipeline.update()
+            .where(db.Pipeline.c.id == uid)
+            .values(status=new, heartbeat=hb)
+        )
         await database.execute(q)
 
     return {"id": uid, "status": new, "user": res["user"]}
