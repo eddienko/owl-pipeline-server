@@ -2,14 +2,14 @@
 apiVersion: autoscaling/v2beta1
 kind: HorizontalPodAutoscaler
 metadata:
-  name: {{ include "owl.fullname" . }}
+  name: {{ include "owl.fullname" . }}-api
   labels:
-    {{- include "owl.labels" . | nindent 4 }}
+    {{- include "owl.labels.api" . | nindent 4 }}
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: {{ include "owl.fullname" . }}
+    name: {{ include "owl.fullname" . }}-api
   minReplicas: {{ .Values.autoscaling.minReplicas }}
   maxReplicas: {{ .Values.autoscaling.maxReplicas }}
   metrics:

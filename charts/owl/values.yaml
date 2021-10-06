@@ -111,10 +111,10 @@ ingress:
 
 autoscaling:
   enabled: false
-  # minReplicas: 1
-  # maxReplicas: 100
-  # targetCPUUtilizationPercentage: 80
-  # targetMemoryUtilizationPercentage: 80
+  minReplicas: 2
+  maxReplicas: 6
+  targetCPUUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: 80
 
 smtp:
   enabled: false
