@@ -114,7 +114,7 @@ class Pipeline:
             self.result = future.result()
 
     def close(self):
-        asyncio.ensure_future(self.stop())
+        self.loop.run_until_complete(self.stop())
 
     async def start_dask_cluster(self):
         self.logger.info("Starting Dask cluster")
