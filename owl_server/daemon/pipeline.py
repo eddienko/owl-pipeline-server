@@ -103,6 +103,10 @@ class Pipeline:
 
         return self.status
 
+    def close(self):
+        self.logger.info("Stopping pipeline")
+        asyncio.ensure_future(self.stop())
+
     def pipeline_done(self, future: asyncio.Future):
         self.logger.info("Pipeline ID %s finished", self.uid)
         if e := future.exception():
@@ -112,9 +116,6 @@ class Pipeline:
         else:
             self.status = "FINISHED"
             self.result = future.result()
-
-    def close(self):
-        self.loop.run_until_complete(self.stop())
 
     async def start_dask_cluster(self):
         self.logger.info("Starting Dask cluster")
@@ -211,8 +212,6 @@ class Pipeline:
         """
         self.logger.info("Stopping pipeline ID %s", self.uid)
         if self.running:
-            self.running = False
-
             with suppress(Exception):
                 await self.cluster.close()
 
@@ -223,6 +222,8 @@ class Pipeline:
 
             with suppress(Exception):
                 self.pipe_socket.close(linger=0)
+
+            self.running = False
 
     async def setup_slurm_cluster(self):
         self.logger.info("Setting up slurm cluster")

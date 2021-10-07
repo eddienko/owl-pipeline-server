@@ -161,7 +161,7 @@ def kube_create_job_object(
     template.template.spec = client.V1PodSpec(
         containers=[container],
         restart_policy="Never",
-        termination_grace_period_seconds=30,
+        termination_grace_period_seconds=100,
         volumes=volumes,
         service_account_name=service_account_name,
         security_context=secReq,
@@ -183,6 +183,7 @@ async def kube_create_job(
     extraConfig=None,
     env_vars=None,
     service_account_name=None,
+    retries=0,
 ):
     namespace = namespace or "default"
     # Create the job definition
@@ -194,6 +195,7 @@ async def kube_create_job(
         command=command or "sleep 60",
         extraConfig=extraConfig or {},
         service_account_name=service_account_name,
+        retries=retries,
     )
 
     config.load_incluster_config()

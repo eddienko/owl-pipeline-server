@@ -64,14 +64,10 @@ RUN echo "Cmnd_Alias APT = /usr/bin/apt\nuser    ALL=(ALL) NOPASSWD: APT" > /etc
     echo "Cmnd_Alias S6 = /bin/s6-nuke\nuser    ALL=(ALL) NOPASSWD: S6" > /etc/sudoers.d/s6 && \
     chmod o-r /etc/sudoers.d/*
 
-COPY ./docker/start.sh /usr/local/bin/start.sh
-RUN chmod a+rx /usr/local/bin/start.sh
-
 ENV PATH=/home/user/.local/bin:$PATH
 
 WORKDIR /home/user
 USER 1000
 
-ENTRYPOINT ["/init", "/usr/local/bin/start.sh"]
-
+ENTRYPOINT ["/init"]
 

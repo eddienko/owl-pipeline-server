@@ -418,6 +418,7 @@ class Scheduler:
             "NUMEXPR_MAX_THREADS": "1",
             "BLOSC_NOLOCK": "1",
             "BLOSC_NTHREADS": "1",
+            "S6_KILL_GRACETIME": "30000",
         }
 
         extra = config.pipeline.extraEnv or {}

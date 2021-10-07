@@ -70,4 +70,4 @@ RUN echo "Cmnd_Alias MUNGE = /usr/sbin/service munge start, /usr/sbin/service mu
 WORKDIR /home/user
 USER 1000
 
-ENTRYPOINT ["/init", "/usr/local/bin/start.sh"]
+ENTRYPOINT ["/init"]

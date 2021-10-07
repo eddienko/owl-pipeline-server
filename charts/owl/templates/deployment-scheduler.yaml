@@ -42,6 +42,8 @@ spec:
               value: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
             - name: LOGLEVEL
               value: "{{ .Values.loglevel }}"
+            - name: S6_KILL_GRACETIME
+              value: "10000"
           {{- with .Values.extraEnv }}
           {{- . | toYaml | trimSuffix "\n" | nindent 12 }}
           {{- end }}

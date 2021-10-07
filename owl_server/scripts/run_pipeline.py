@@ -39,11 +39,13 @@ def start_loop(pdef):
 
     loop.add_signal_handler(signal.SIGTERM, pipeline.close)
     loop.add_signal_handler(signal.SIGINT, pipeline.close)
+    loop.add_signal_handler(signal.SIGHUP, lambda *args: None)
 
     try:
         res = loop.run_until_complete(pipeline.run())
     except Exception:
-        pipeline.close()
+        loop.run_until_complete(pipeline.stop())
+        loop.close()
         raise
     loop.close()
 
