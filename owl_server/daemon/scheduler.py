@@ -440,6 +440,7 @@ class Scheduler:
             extraConfig=config.pipeline,
             env_vars=env_vars,
             service_account_name=config.pipeline["serviceAccountName"],
+            retries=pipe_config["resources"].get("retries", 0),
         )
 
         heartbeat = {"status": "STARTING"}

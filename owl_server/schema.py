@@ -137,6 +137,7 @@ schema_resources = AttrSchema(
         vo.Optional("workers", default=3): vo.All(int, vo.Range(min=1, max=100)),
         vo.Optional("memory", default=7): vo.All(int, vo.Range(min=1, max=1000)),
         vo.Optional("cores", default=2): vo.All(int, vo.Range(min=1, max=1000)),
+        vo.Optional("retries", default=0): vo.All(int, vo.Range(min=0, max=10)),
         vo.Optional("image"): DockerImage(),
     }
 )
