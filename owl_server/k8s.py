@@ -165,6 +165,7 @@ def kube_create_job_object(
         volumes=volumes,
         service_account_name=service_account_name,
         security_context=secReq,
+        node_selector=extraConfig.node_selector,
     )
 
     # And finaly we can create our V1JobSpec!

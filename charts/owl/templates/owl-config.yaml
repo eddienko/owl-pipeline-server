@@ -35,6 +35,10 @@ data:
       {{- toYaml .Values.smtp | nindent 6 }}
 
     pipeline:
+      {{- with .Values.pipeline.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}    
       securityContext:
         {{- toYaml .Values.securityContext | nindent 8 }}
       podSecurityContext:
@@ -151,6 +155,10 @@ data:
                   {{- end }}
                   resources:
                     {{- toYaml .Values.pipeline.resources | nindent 20 }}
+              {{- with .Values.pipeline.nodeSelector }}
+              nodeSelector:
+                {{- toYaml . | nindent 16 }}
+              {{- end }}
               volumes:
                 - name: dask-config
                   configMap:
@@ -249,6 +257,10 @@ data:
                     requests:
                       cpu: 1
                       memory: 7G
+              {{- with .Values.pipeline.nodeSelector }}
+              nodeSelector:
+                {{- toYaml . | nindent 16 }}
+              {{- end }}
               volumes:
                 - name: dask-config
                   configMap:

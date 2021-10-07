@@ -65,6 +65,7 @@ api:
   tolerations: []
 
 pipeline:
+  nodeSelector: {}
   resources:
     limits:
       cpu: 2
