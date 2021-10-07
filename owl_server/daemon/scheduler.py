@@ -617,9 +617,11 @@ class Scheduler:
         await asyncio.sleep(0)
 
         self.logger.info("Updating pipeline %s - %s", uid, status)
-        data = {"status": status, "heartbeat": self.pipelines[uid].get("heartbeat")}
-        root = f"/api/pipeline/update/{uid}"
+        data = {"status": status}
+        with suppress(KeyError):
+            data["heartbeat"] = self.pipelines[uid]["heartbeat"]
 
+        root = f"/api/pipeline/update/{uid}"
         msg = await self._make_request(root, method="POST", data=data)
 
         if "detail" in msg:
