@@ -232,8 +232,8 @@ async def pipeline_log(
     # TODO: check that pipeline user == username or admin
     level = level.upper()
     q = db.PipelineLogs.select().where(db.PipelineLogs.c.jobid == uid)
-    if level not in ["ALL"]:
-        q = q.where(db.PipelineLogs.c.level == level)
+    if level in ["INFO"]:
+        q = q.where(db.PipelineLogs.c.level != "DEBUG")
     q = q.order_by(db.PipelineLogs.c.id.asc())
     return StreamingResponse(query_stream(q))
 
