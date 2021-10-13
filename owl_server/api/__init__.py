@@ -224,15 +224,15 @@ async def query_stream(q):
         yield f"{out}\n"
 
 
-@app.get("/api/pipeline/log/{uid}")
+@app.get("/api/pipeline/log/{uid}/{level}")
 @authenticate()
 async def pipeline_log(
-    uid: int, level: bool = None, authentication=Header(None), username=None
+    uid: int, level: str, authentication=Header(None), username=None
 ):
     # TODO: check that pipeline user == username or admin
-    print("******************", uid, level)
+    level = level.upper()
     q = db.PipelineLogs.select().where(db.PipelineLogs.c.jobid == uid)
-    if level:
+    if level not in ["ALL"]:
         q = q.where(db.PipelineLogs.c.level == level)
     q = q.order_by(db.PipelineLogs.c.id.asc())
     return StreamingResponse(query_stream(q))
