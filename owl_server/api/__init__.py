@@ -226,9 +226,13 @@ async def query_stream(q):
 
 @app.get("/api/pipeline/log/{uid}")
 @authenticate()
-async def pipeline_log(uid: int, authentication=Header(None), username=None):
+async def pipeline_log(
+    uid: int, level: bool = None, authentication=Header(None), username=None
+):
     # TODO: check that pipeline user == username
     q = db.PipelineLogs.select().where(db.PipelineLogs.c.jobid == uid)
+    if level:
+        q = q.where(db.PipelineLogs.c.level == level)
     q = q.order_by(db.PipelineLogs.c.id.asc())
     return StreamingResponse(query_stream(q))
 
