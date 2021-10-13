@@ -132,7 +132,7 @@ class Pipeline:
     def dask_config(self):
         resources = self.pdef["resources"]
         worker = config.dask.kubernetes["worker-template"]["spec"]["containers"][0]
-        nthreads = resources["cores"]
+        nthreads = resources["cpu"]
         memory = resources["memory"]
         args = [
             "dask-worker",

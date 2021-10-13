@@ -210,7 +210,7 @@ class Scheduler:
                 break
 
             res = pipe["config"]["resources"]
-            res_cores = res["cores"] * res["workers"]
+            res_cores = res["cpu"] * res["workers"]
             res_mem = res["memory"] * res["workers"]
             if self.check_pipeline_resources(res_cores, res_mem):
                 self.logger.info("Pipeline %s can run with requested resources", pipe["id"])
