@@ -229,7 +229,8 @@ async def query_stream(q):
 async def pipeline_log(
     uid: int, level: bool = None, authentication=Header(None), username=None
 ):
-    # TODO: check that pipeline user == username
+    # TODO: check that pipeline user == username or admin
+    print("******************", uid, level)
     q = db.PipelineLogs.select().where(db.PipelineLogs.c.jobid == uid)
     if level:
         q = q.where(db.PipelineLogs.c.level == level)
