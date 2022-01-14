@@ -210,10 +210,13 @@ class Scheduler:
                 break
 
             res = pipe["config"]["resources"]
+            self.logger.info("Pipeline %s requesting %s", pipe["id"], res)
             res_cores = res["cpu"] * res["workers"]
             res_mem = res["memory"] * res["workers"]
             if self.check_pipeline_resources(res_cores, res_mem):
-                self.logger.info("Pipeline %s can run with requested resources", pipe["id"])
+                self.logger.info(
+                    "Pipeline %s can run with requested resources", pipe["id"]
+                )
             else:
                 self.logger.warn("Not enough resources to run pipeline %s", pipe["id"])
                 continue
@@ -223,8 +226,14 @@ class Scheduler:
 
     def check_pipeline_resources(self, res_cores, res_mem):
         with suppress(KeyError):
-            avail_cores = self.kube_metrics["machine_cpu_cores"] - self.kube_metrics["kube_pod_container_resource_requests_cpu_cores"]
-            avail_mem = self.kube_metrics["machine_memory_bytes"] - self.kube_metrics["kube_pod_container_resource_requests_memory_bytes"]
+            avail_cores = (
+                self.kube_metrics["machine_cpu_cores"]
+                - self.kube_metrics["kube_pod_container_resource_requests_cpu_cores"]
+            )
+            avail_mem = (
+                self.kube_metrics["machine_memory_bytes"]
+                - self.kube_metrics["kube_pod_container_resource_requests_memory_bytes"]
+            )
             used_pipe_cores = sum(v["cores"] for v in self.pipe_metrics.values())
             used_pipe_mem = sum(v["mem"] for v in self.pipe_metrics.values())
             avail_cores = avail_cores - used_pipe_cores
@@ -232,7 +241,6 @@ class Scheduler:
             if (avail_cores < res_cores) or (avail_mem < res_mem * 1e6):
                 return
         return True
-
 
     @safe_loop()
     async def cancel_pipelines(self):
@@ -339,7 +347,9 @@ class Scheduler:
                         response = await resp.json()
                 elif method == "POST":
                     data = data or {}
-                    async with self.session.post(url, json=data, headers=headers) as resp:
+                    async with self.session.post(
+                        url, json=data, headers=headers
+                    ) as resp:
                         response = await resp.json()
         except ClientConnectorError:
             self.logger.error("Unable to connect to API at %s", url)
@@ -399,7 +409,9 @@ class Scheduler:
         # in case we are using custom images
         extra_pip_packages = pdef["extra_pip_packages"]
         if os.environ.get("RUN_DEVELOP", None) is not None:
-            extra_pip_packages = extra_pip_packages + f" owl-pipeline-server=={__version__}"
+            extra_pip_packages = (
+                extra_pip_packages + f" owl-pipeline-server=={__version__}"
+            )
 
         env_vars = {
             "UID": f"{uid}",
@@ -507,9 +519,7 @@ class Scheduler:
         uid, msg = await self.pipe_router.recv_multipart()
         uid, msg = int(uid.decode()), json.loads(msg.decode())
         self.logger.debug("Received heartbeat from pipeline %s : %s", uid, msg)
-        self.pipelines[uid].update(
-            {"last": time.monotonic(), "heartbeat": msg}
-        )
+        self.pipelines[uid].update({"last": time.monotonic(), "heartbeat": msg})
         await self.update_pipeline(uid, msg["status"])
 
     def _set_maintance(self, value):
@@ -545,21 +555,25 @@ class Scheduler:
 
     @safe_loop()
     async def live_commands(self):
-        """Receive and execute live commands. Reuse for metrics.
-        """
+        """Receive and execute live commands. Reuse for metrics."""
         req_id, msg = await self.live_router.recv_multipart()
-        if 'metrics' in msg.decode():
+        if "metrics" in msg.decode():
             metrics = [f"owl_pipelines_running {len(self.pipelines)}", ""]
-            metrics_str = '\r\n'.join(metrics)
-            await self.live_router.send_multipart([
-                req_id, b'HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\n',
-                req_id, metrics_str.encode(),
-                req_id, b''])
+            metrics_str = "\r\n".join(metrics)
+            await self.live_router.send_multipart(
+                [
+                    req_id,
+                    b"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\n",
+                    req_id,
+                    metrics_str.encode(),
+                    req_id,
+                    b"",
+                ]
+            )
 
     @safe_loop()
     async def admin_commands(self):
-        """Receive and execute administrative commands.
-        """
+        """Receive and execute administrative commands."""
         token, msg = await self.admin_router.recv_multipart()
         token, msg = token.decode(), json.loads(msg.decode())
         self.logger.debug("Received administrative command %s", msg)
@@ -593,11 +607,11 @@ class Scheduler:
                 self.logger.debug("Pipeline completed %s", pipe)
                 await self.stop_pipeline(pipe, status)
             # elif status in ["ERROR"]:
-                # self.logger.debug("Pipeline %s returned status %s", pipe, status)
-                # We do not stop the pipeline here to allow for
-                # jobs to rerun
-                # self.logger.debug("Stopping pipeline %s with status %s", pipe, status)
-                # await self.stop_pipeline(pipe, status)
+            # self.logger.debug("Pipeline %s returned status %s", pipe, status)
+            # We do not stop the pipeline here to allow for
+            # jobs to rerun
+            # self.logger.debug("Stopping pipeline %s with status %s", pipe, status)
+            # await self.stop_pipeline(pipe, status)
             elif time.monotonic() - last > 5 * self.heartbeat:
                 self.logger.debug("Heartbeat not received. Stopping pipeline %s", pipe)
                 status = "ERROR"
