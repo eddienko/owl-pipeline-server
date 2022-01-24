@@ -211,8 +211,12 @@ class Scheduler:
 
             res = pipe["config"]["resources"]
             self.logger.info("Pipeline %s requesting %s", pipe["id"], res)
-            res_cores = res["cpu"] * res["workers"]
-            res_mem = res["memory"] * res["workers"]
+            try:
+                res_cores = res["cpu"] * res["workers"]
+                res_mem = res["memory"] * res["workers"]
+            except KeyError:
+                await self.update_pipeline(pipe["id"], "ERROR")
+                continue
             if self.check_pipeline_resources(res_cores, res_mem):
                 self.logger.info(
                     "Pipeline %s can run with requested resources", pipe["id"]
