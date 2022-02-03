@@ -148,6 +148,7 @@ class Pipeline(BaseModel):
     config: Optional[Dict[str, Any]] = None
     status: Optional[str] = None
     heartbeat: Optional[Dict[str, Any]] = None
+    extra: Optional[Dict[str, Any]] = None
 
 
 class PipeDef(BaseModel):
@@ -242,6 +243,20 @@ async def pipeline_log(
 @authenticate()
 async def pipeline_add(pipe: Pipeline, authentication=Header(None), username=None):
     config = await check_config(pipe.config)
+    q = db.Pipeline.insert().values(
+        user=username, config=config, created_at=datetime.now(), status="PENDING"
+    )
+    uid = await database.execute(q)
+    return {"id": uid}
+
+
+@app.post("/api/pipeline/add2")
+async def pipeline_scan(pipe: Pipeline):
+    config = await check_config(pipe.config)
+    try:
+        username = pipe.extra["user"]
+    except:
+        username = "daemon"
     q = db.Pipeline.insert().values(
         user=username, config=config, created_at=datetime.now(), status="PENDING"
     )
