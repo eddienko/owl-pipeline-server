@@ -51,7 +51,8 @@ async def check_token(username, token) -> bool:
     res = await database.fetch_one(q)
     if (not res) or (res["token"] != token):
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized",
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Unauthorized",
         )
 
 
@@ -69,7 +70,8 @@ async def check_admin(username) -> bool:
     res = await database.fetch_one(q)
     if (not res) or (res["is_admin"] is False):
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized",
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Unauthorized",
         )
 
 
@@ -77,7 +79,8 @@ async def check_config(config):
     await asyncio.sleep(0)
     if not config:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Empty config",
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Empty config",
         )
     return config
 
@@ -95,7 +98,8 @@ async def check_status(st):
         "CANCELLED",
     ]:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Invalid status",
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Invalid status",
         )
     return st
 
@@ -197,7 +201,8 @@ async def logger(payload: str = Body(...), request: Request = None):
     ip = ipaddress.ip_address(request.client.host)
     if not ip.is_private:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized",
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Unauthorized",
         )
 
     if not isinstance(payload, dict):
@@ -274,7 +279,8 @@ async def pipeline_cancel(uid: int, authentication=Header(None), username=None):
         res = await database.fetch_one(q)
         if not res["is_admin"]:
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized",
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Unauthorized",
             )
     q = db.Pipeline.update().where(db.Pipeline.c.id == uid).values(status="TO_CANCEL")
     await database.execute(q)
@@ -291,7 +297,8 @@ async def pipeline_update(
     res = await database.fetch_one(q)
     if not res:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=f"Pipeline {uid} not found",
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Pipeline {uid} not found",
         )
     if username not in [OWL_USERNAME, res["user"]]:
         await check_admin(username)
@@ -370,7 +377,8 @@ async def add_user(user: User, authentication=Header(None), username=None):
         await database.execute(q)
     except Exception:
         raise HTTPException(
-            status_code=status.HTTP_208_ALREADY_REPORTED, detail="User already exists",
+            status_code=status.HTTP_208_ALREADY_REPORTED,
+            detail="User already exists",
         )
     return {"user": user.username}
 
@@ -400,7 +408,8 @@ async def update_user(user: User, authentication=Header(None), username=None):
 async def change_password(user: User, authentication=Header(None), username=None):
     if not user.password:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Password not supplied",
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Password not supplied",
         )
 
     hasher = PBKDF2PasswordHasher()
