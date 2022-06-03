@@ -241,7 +241,7 @@ class Pipeline:
             async with rpc(self.cluster.scheduler_address) as s:
                 scheduler_info = await s.identity()
             self.info["scheduler"] = scheduler_info
-            self.logger.debug("Scheduler info : %s", scheduler_info)
+            # self.logger.debug("Scheduler info : %s", scheduler_info)
             await self.delete_unresponsive_workers()
         await asyncio.sleep(config.heartbeat)
 
