@@ -54,7 +54,7 @@ class register_pipeline:
                     )
                 c = yaml.safe_load(logconf["pipeline"])
                 client.register_worker_plugin(LoggingPlugin(c))
-                client.register_worker_plugin(ProcessPoolPlugin)
+                client.register_worker_plugin(ProcessPoolPlugin())
             else:
                 client = None
             try:
