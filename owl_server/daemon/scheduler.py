@@ -412,7 +412,7 @@ class Scheduler:
 
         await self._tear_pipeline(uid)
 
-        command = "owl-server pipeline"
+        command = "/usr/local/bin/start.sh owl-server pipeline"
 
         # TODO: Check that the image is allowed
         dask_image_spec = pipe_config["resources"].get("image", self.env.OWL_IMAGE_SPEC)

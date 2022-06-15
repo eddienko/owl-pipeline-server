@@ -135,6 +135,7 @@ class Pipeline:
         nthreads = resources["cpu"]
         memory = resources["memory"]
         args = [
+            "/usr/local/bin/start.sh",
             "dask-worker",
             "--nthreads",
             f"{nthreads}",
@@ -233,7 +234,7 @@ class Pipeline:
             info["workers"] = workers_info
             await client.run(slurm_configure, info)
             await client.run_on_scheduler(slurm_configure, info)
-        self.logger.info('%s', info)
+        self.logger.info("%s", info)
 
     @safe_loop()
     async def get_scheduler_info(self):
