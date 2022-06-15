@@ -142,6 +142,17 @@ schema_resources = AttrSchema(
     }
 )
 
+schema_python = AttrSchema(
+    {
+        vo.Optional("virtualenv", default=""): str,
+        vo.Optional("reset_virtualenv", default=""): str,
+    }
+)
+
 schema_pipeline = AttrSchema(
-    {vo.Required("resources"): schema_resources}, extra=vo.ALLOW_EXTRA
+    {
+        vo.Required("resources"): schema_resources,
+        vo.Optional("python", default=schema_python({})): schema_python,
+    },
+    extra=vo.ALLOW_EXTRA,
 )

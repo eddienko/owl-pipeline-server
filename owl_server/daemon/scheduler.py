@@ -435,6 +435,8 @@ class Scheduler:
             "BLOSC_NOLOCK": "1",
             "BLOSC_NTHREADS": "1",
             "S6_KILL_GRACETIME": "30000",
+            "PYTHON_VIRTUALENV": pipe_config["python"].get("virtualenv", ""),
+            "RESET_VIRTUALENV": pipe_config["python"].get("reset_virtualenv", ""),
         }
 
         extra = config.pipeline.extraEnv or {}
