@@ -92,7 +92,7 @@ class Pipeline:
         )
         self.proc.add_done_callback(self.pipeline_done)
         self._tasks.append(self.proc)
-        self._tasks.append(asyncio.ensure_future(self.get_scheduler_info()))
+        # self._tasks.append(asyncio.ensure_future(self.get_scheduler_info()))
 
         self.status = "RUNNING"
         self.running = True
