@@ -15,6 +15,7 @@ from async_timeout import timeout
 from owl_server import __version__, k8s
 from owl_server.config import config, refresh
 
+from ..schema import schema_pipeline
 from .utils import safe_loop, send_email
 
 MAX_PIPELINES = 99
@@ -208,6 +209,13 @@ class Scheduler:
                     "Maximum number of pipelines reached (%s)", self._max_pipe
                 )
                 break
+
+            try:
+                pipe["config"] = schema_pipeline(pipe["config"])
+            except Exception:
+                self.logger.error("Unable to parse pipeline config %s", pipe["config"])
+                await self.update_pipeline(pipe["id"], "ERROR")
+                continue
 
             res = pipe["config"]["resources"]
             self.logger.info("Pipeline %s requesting %s", pipe["id"], res)
