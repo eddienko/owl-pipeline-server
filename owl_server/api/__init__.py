@@ -208,9 +208,6 @@ async def logger(payload: str = Body(...), request: Request = None):
     if not isinstance(payload, dict):
         payload = json.loads(payload)
 
-    if not isinstance(payload, dict):
-        payload = json.loads(payload)
-
     if payload["topic"] not in ["PIPELINE"]:
         return {}
 
