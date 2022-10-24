@@ -198,6 +198,9 @@ class Scheduler:
         root = "/api/pipeline/list/pending"
         pipelines = await self._make_request(root)
 
+        if not pipelines:
+            return
+
         if "detail" in pipelines:
             self.logger.error(pipelines["detail"])
             return
@@ -263,6 +266,9 @@ class Scheduler:
         self.logger.debug("Checking for pipelines to cancel")
         root = "/api/pipeline/list/to_cancel"
         pipelines = await self._make_request(root)
+
+        if not pipelines:
+            return
 
         if "detail" in pipelines:
             self.logger.error(pipelines["detail"])
@@ -656,6 +662,9 @@ class Scheduler:
         root = f"/api/pipeline/update/{uid}"
         msg = await self._make_request(root, method="POST", data=data)
 
+        if not msg:
+            return
+
         if "detail" in msg:
             self.logger.error(msg["detail"])
             return
@@ -675,6 +684,9 @@ class Scheduler:
         self.logger.debug("Getting pipeline definition for %s", name)
         root = f"/api/pdef/get/{name}"
         res = await self._make_request(root)
+
+        if not res:
+            return
 
         if "detail" in res:
             self.logger.error("Pipeline not found %s", name)
