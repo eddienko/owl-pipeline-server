@@ -2,6 +2,7 @@ import asyncio
 import json
 import logging
 import os
+import secrets
 import time
 from contextlib import suppress
 from pathlib import Path
@@ -34,8 +35,8 @@ class Scheduler:
 
         self.env = config.env  # enviroment variables from config
         self.heartbeat = config.heartbeat
-        self._token = config.pop(
-            "token"
+        self._token = (
+            secrets.token_hex()
         )  # secret token to use in communication between API and OWL
 
         self._smtp = config.pop("smtp", None)  # SMTP configuration
@@ -102,6 +103,8 @@ class Scheduler:
         except Exception as e:
             self.logger.critical("Unable to setup communication sockets: %s", e)
 
+        await self.register_token()
+
         self._start_tasks()
 
         self.is_started = True
@@ -122,6 +125,15 @@ class Scheduler:
                 asyncio.create_task(self.live_commands()),
             ]
         )
+
+    @safe_loop()
+    async def register_token(self):
+        """Register token with the API."""
+        path = f"/localapi/auth/token/register"
+        res = await self._make_request(path, method="POST", data={"token": self._token})
+        if res is not None:
+            return True
+        await asyncio.sleep(self.heartbeat)
 
     @safe_loop()
     async def scheduler_heartbeat(self):

@@ -47,7 +47,9 @@ def authenticate(admin=False):
 
 
 async def check_token(username, token) -> bool:
-    q = db.Token.select().where(db.Token.c.username == username)
+    q = db.User.select().where(db.User.c.username == username)
+    res = await database.fetch_one(q)
+    q = db.Token.select().where(db.Token.c.user_id == res["id"])
     res = await database.fetch_one(q)
     if (not res) or (res["token"] != token):
         raise HTTPException(
@@ -123,17 +125,19 @@ admin_socket = AdminSocket()
 @app.on_event("startup")
 async def startup():
     await database.connect()
-    token = config.token
-    try:
-        q = db.Token.insert().values(username=OWL_USERNAME, token=token)
-        await database.execute(q)
-    except Exception:
-        q = (
-            db.Token.update()
-            .where(db.Token.c.username == OWL_USERNAME)
-            .values(token=token)
-        )
-        await database.execute(q)
+    # token = config.token
+    # q = db.User.select().where(db.User.c.username == OWL_USERNAME)
+    # res = await database.fetch_one(q)
+    # try:
+    #     q = db.Token.insert().values(user_id=res["id"], token=token)
+    #     await database.execute(q)
+    # except Exception:
+    #     q = (
+    #         db.Token.update()
+    #         .where(db.Token.c.user_id == res["id"])
+    #         .values(token=token)
+    #     )
+    #     await database.execute(q)
 
 
 @app.on_event("shutdown")
@@ -164,6 +168,10 @@ class PipeDef(BaseModel):
 
 class AdminCommand(BaseModel):
     cmd: Dict[str, Any]
+
+
+class Token(BaseModel):
+    token: str
 
 
 @app.get("/api/pipeline/list/{status}")
@@ -253,7 +261,7 @@ async def pipeline_add(pipe: Pipeline, authentication=Header(None), username=Non
     return {"id": uid}
 
 
-@app.post("/api/pipeline/add2")
+@app.post("/localapi/pipeline/add2")
 async def pipeline_scan(pipe: Pipeline):
     config = await check_config(pipe.config)
     try:
@@ -452,6 +460,23 @@ async def delete_user(user: User, authentication=Header(None), username=None):
     await database.execute(q)
 
     return {"user": user.username}
+
+
+@app.post("/localapi/auth/token/register")
+async def register_token(token: Token):
+    q = db.User.select().where(db.User.c.username == OWL_USERNAME)
+    res = await database.fetch_one(q)
+    try:
+        q = db.Token.insert().values(user_id=res["id"], token=token.token)
+        await database.execute(q)
+    except Exception:
+        q = (
+            db.Token.update()
+            .where(db.Token.c.user_id == res["id"])
+            .values(token=token.token)
+        )
+        await database.execute(q)
+    return {"token": token.token}
 
 
 @app.post("/api/pdef/add")
