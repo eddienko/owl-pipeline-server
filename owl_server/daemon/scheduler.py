@@ -38,13 +38,15 @@ class Scheduler:
             "token"
         )  # secret token to use in communication between API and OWL
 
-        self._smtp = config.pop("smtp")  # SMTP configuration
+        self._smtp = config.pop("smtp", None)  # SMTP configuration
 
         self.pipelines = {}  # list of pipelines running
         self._max_pipe = config.max_pipelines or MAX_PIPELINES
         self.kube_metrics = {}
         self.pipe_metrics = {}
-        config.pop("dbi")  # database configuration, remove it as it is not used here
+        config.pop(
+            "dbi", None
+        )  # database configuration, remove it as it is not used here
 
         self.is_started = False
         self._tasks = []  # list of coroutines
