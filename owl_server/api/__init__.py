@@ -181,7 +181,7 @@ async def pipeline_list(
 ):
     st = await check_status(status.upper())
     q = (
-        db.Pipeline.join(db.User)
+        db.Pipeline.join(db.UserOnly)
         .join(db.PipelineDefinition)
         .join(db.ContainerImage)
         .select()

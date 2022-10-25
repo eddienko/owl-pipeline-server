@@ -421,20 +421,18 @@ class Scheduler:
 
         await self._tear_pipeline(uid)
 
-        args = "owl-server pipeline"
-
         docker_image = f"{pipe['image']}:{pipe['tag']}"
-
-        # TODO: extract env (e.g. EXTRA_PIP_PACKAGES)
+        python = pipe_config["python"]
 
         env_vars = {
+            "RUN_DEVELOP": "darkroom",
             "UID": f"{uid}",
             "JOBID": f"{uid}",
             "JOB_USER": user,
             "LOGLEVEL": config.loglevel,
             "PIPEDEF": json.dumps(pipe_config),
             "DOCKER_IMAGE": docker_image,
-            # "EXTRA_PIP_PACKAGES": extra_pip_packages,
+            "EXTRA_PIP_PACKAGES": pipe["env"].get("EXTRA_PIP_PACKAGES", ""),
             "OMP_NUM_THREADS": "1",
             "OPENBLAS_NUM_THREADS": "1",
             "MKL_NUM_THREADS": "1",
@@ -443,8 +441,8 @@ class Scheduler:
             "NUMEXPR_MAX_THREADS": "1",
             "BLOSC_NOLOCK": "1",
             "BLOSC_NTHREADS": "1",
-            "PYTHON_VIRTUALENV": pipe_config["python"].get("virtualenv", ""),
-            "RESET_VIRTUALENV": pipe_config["python"].get("reset_virtualenv", ""),
+            "PYTHON_VIRTUALENV": python.get("virtualenv", "") or "default",
+            "RESET_VIRTUALENV": python.get("reset_virtualenv", ""),
         }
 
         # extra = config.pipeline.extraEnv or {}
@@ -463,10 +461,12 @@ class Scheduler:
 
         self.logger.debug("Creating job %s with config %s", jobname, pipe)
 
+        args = "owl-server pipeline"
+
         body, status = await k8s.kube_create_job(
             jobname,
             docker_image,
-            args=args,
+            args=args.split(),
             command=pipe["image_spec"]["command"],
             namespace=self.namespace,
             env_vars=env_vars,

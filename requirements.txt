@@ -9,7 +9,7 @@ dask==2022.5.2
 databases==0.5.2
 distributed==2022.5.2
 fastapi==0.68.1
-kubernetes==23.6.0
+kubernetes==24.2.0
 loky==3.1.0
 psycopg2==2.*
 python-dateutil==2.8.2

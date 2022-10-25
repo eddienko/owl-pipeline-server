@@ -95,4 +95,12 @@ User = sqlalchemy.Table(
     metadata,
     sqlalchemy.Column("id", sqlalchemy.Integer, primary_key=True),
     sqlalchemy.Column("username", sqlalchemy.String(length=32), unique=True),
+    sqlalchemy.Column("password", sqlalchemy.String(length=32), unique=True),
+)
+
+UserOnly = sqlalchemy.Table(
+    "darkroom_core_user_nopass",
+    metadata,
+    sqlalchemy.Column("id", sqlalchemy.Integer, primary_key=True),
+    sqlalchemy.Column("username", sqlalchemy.String(length=32), unique=True),
 )

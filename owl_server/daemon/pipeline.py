@@ -17,6 +17,7 @@ from owl_server import pipelines
 from owl_server.config import config
 from voluptuous import Invalid, MultipleInvalid
 
+from ..dask_k8s import update_dask_kubernetes
 from ..schema import schema_pipeline
 from .utils import safe_loop, slurm_configure, slurm_envvars
 
@@ -130,12 +131,12 @@ class Pipeline:
             await self.setup_slurm_cluster()
 
     def dask_config(self):
+        update_dask_kubernetes()
         resources = self.pdef["resources"]
-        worker = config.dask.kubernetes["worker-template"]["spec"]["containers"][0]
+        worker = dask_config["kubernetes"]["worker-template"]["spec"]["containers"][0]
         nthreads = resources["cpu"]
         memory = resources["memory"]
         args = [
-            "/usr/local/bin/start.sh",
             "dask-worker",
             "--nthreads",
             f"{nthreads}",
@@ -158,8 +159,10 @@ class Pipeline:
             },
         }
 
-        for k in ["name", "scheduler-template", "worker-template"]:
-            dask_config["kubernetes"][k] = config.dask.kubernetes[k]
+        dask_config["kubernetes"]["worker-template"]["spec"]["containers"][0] = worker
+
+        # for k in ["name", "scheduler-template", "worker-template"]:
+        #     dask_config["kubernetes"][k] = config.dask.kubernetes[k]
 
     async def _setup_sockets(self):
         self.owl_host = os.environ.get("OWL_SCHEDULER_SERVICE_HOST")

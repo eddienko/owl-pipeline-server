@@ -147,10 +147,10 @@ def kube_create_job_object(
     container = client.V1Container(
         name=container_name,
         image=container_image,
-        # env=env_list,
+        env=env_list,
         image_pull_policy="IfNotPresent",
-        command=["/init/init.sh"],
-        args=["sleep 120"],
+        command=command,
+        args=args,
         # resources=resourcesReq,
         volume_mounts=volume_mounts_spec,
         # security_context=secReq,
