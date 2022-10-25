@@ -163,11 +163,11 @@ loggers:
     level: ${LOGLEVEL}
     propagate: false
   distributed:
-    handlers: [console, http]
+    handlers: [console]
     level: INFO
     propagate: false
   root:
-    handlers: [console, http]
+    handlers: [console]
     level: INFO
     propagate: false
 """,

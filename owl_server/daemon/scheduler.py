@@ -404,46 +404,28 @@ class Scheduler:
             pipeline definition
         """
         uid = int(pipe["id"])
-        user = pipe["user"]
+        user = pipe["username"]
         pipe_config = pipe["config"]
 
-        pdef = await self.get_pipedef(pipe_config["name"])
-        if pdef is None:
-            self.logger.error(
-                "Failed to obtain fingerprint for pipeline %s", config["name"]
-            )
-            raise Exception("Fingerprint failed")
-
-        if not pdef["active"]:
-            self.logger.error("Pipeline found but not active %s", config["name"])
-            raise Exception("Fingerprint failed")
-
-        userinfo = await self.get_user(user)
-        if userinfo is None:
-            self.logger.error(
-                "Failed to obtain user info for pipeline %s", config["name"]
-            )
-            raise Exception("User info failed")
+        # TODO
+        # check that pipeline (from pipeline definition) is active
+        # if not pdef["active"]:
+        #     self.logger.error("Pipeline not active %s", config["name"])
+        #     raise Exception("Fingerprint failed")
 
         self.logger.debug("Starting pipeline ID %s", uid)
 
+        # TODO: extract the information about the volumes to be mounted
         with open(f"/var/run/owl/conf/pipeline_{uid}.yaml", "w") as fh:
             fh.write(json.dumps(pipe_config))
 
         await self._tear_pipeline(uid)
 
-        command = "/usr/local/bin/start.sh owl-server pipeline"
+        args = "owl-server pipeline"
 
-        # TODO: Check that the image is allowed
-        dask_image_spec = pipe_config["resources"].get("image", self.env.OWL_IMAGE_SPEC)
+        docker_image = f"{pipe['image']}:{pipe['tag']}"
 
-        # Make sure we are using the same version of owl-pipeline-server
-        # in case we are using custom images
-        extra_pip_packages = pdef["extra_pip_packages"]
-        if os.environ.get("RUN_DEVELOP", None) is not None:
-            extra_pip_packages = (
-                extra_pip_packages + f" owl-pipeline-server=={__version__}"
-            )
+        # TODO: extract env (e.g. EXTRA_PIP_PACKAGES)
 
         env_vars = {
             "UID": f"{uid}",
@@ -451,9 +433,8 @@ class Scheduler:
             "JOB_USER": user,
             "LOGLEVEL": config.loglevel,
             "PIPEDEF": json.dumps(pipe_config),
-            "DASK_IMAGE_SPEC": dask_image_spec,
-            "OWL_IMAGE_SPEC": self.env.OWL_IMAGE_SPEC,
-            "EXTRA_PIP_PACKAGES": extra_pip_packages,
+            "DOCKER_IMAGE": docker_image,
+            # "EXTRA_PIP_PACKAGES": extra_pip_packages,
             "OMP_NUM_THREADS": "1",
             "OPENBLAS_NUM_THREADS": "1",
             "MKL_NUM_THREADS": "1",
@@ -462,44 +443,53 @@ class Scheduler:
             "NUMEXPR_MAX_THREADS": "1",
             "BLOSC_NOLOCK": "1",
             "BLOSC_NTHREADS": "1",
-            "S6_KILL_GRACETIME": "30000",
             "PYTHON_VIRTUALENV": pipe_config["python"].get("virtualenv", ""),
             "RESET_VIRTUALENV": pipe_config["python"].get("reset_virtualenv", ""),
         }
 
-        extra = config.pipeline.extraEnv or {}
-        [env_vars.update({d["name"]: d["value"]}) for d in extra]
+        # extra = config.pipeline.extraEnv or {}
+        # [env_vars.update({d["name"]: d["value"]}) for d in extra]
 
         jobname = f"pipeline-{uid}"
 
         # Reload global config replacing USER
-        # This works because we run in one thread and we do not await until used
-        os.environ.update({"JOB_USER": user})
-        refresh()
+        # This works because we run in one thread and we do not run await until this is used
+        # Needed to replace in the config
+        # os.environ.update({"JOB_USER": user})
+        # refresh()
 
-        self.logger.debug("Creating job %s with config %s", jobname, config.pipeline)
-        status = await k8s.kube_create_job(
+        volumes = pipe["image_spec"].get("volumes", [])
+        volume_mounts = pipe["image_spec"].get("volumeMounts", [])
+
+        self.logger.debug("Creating job %s with config %s", jobname, pipe)
+
+        body, status = await k8s.kube_create_job(
             jobname,
-            dask_image_spec,
-            command=command,
+            docker_image,
+            args=args,
+            command=pipe["image_spec"]["command"],
             namespace=self.namespace,
-            extraConfig=config.pipeline,
             env_vars=env_vars,
-            service_account_name=config.pipeline["serviceAccountName"],
+            service_account_name="owl",
             retries=pipe_config["resources"].get("retries", 0),
+            volumes=volumes,
+            volume_mounts=volume_mounts,
         )
+
+        self.logger.info(body)
 
         heartbeat = {"status": "STARTING"}
 
         self.pipelines[uid] = {
             "last": time.monotonic(),
             "heartbeat": heartbeat,
-            "userinfo": userinfo[0],
+            # "userinfo": userinfo[0],
             "job": status,
             "name": jobname,
             "uid": uid,
             "pdef": pipe_config,
         }
+
         await self.update_pipeline(uid, heartbeat["status"])
 
         self._tasks.append(asyncio.create_task(self.heartbeat_pipeline(uid)))

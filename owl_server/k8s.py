@@ -5,8 +5,7 @@ import string
 from kubernetes_asyncio import client, config
 from kubernetes_asyncio.client.api_client import ApiClient
 from kubernetes_asyncio.client.rest import ApiException
-from kubernetes_asyncio.config.config_exception import \
-    ConfigException  # noqa: F401
+from kubernetes_asyncio.config.config_exception import ConfigException  # noqa: F401
 
 from .utils import _make_spec_from_dict
 
@@ -67,12 +66,14 @@ def kube_create_job_object(
     name,
     container_image,
     command=None,
+    args=None,
     namespace=None,
     container_name=None,
     env_vars=None,
-    extraConfig=None,
     service_account_name=None,
     retries=0,
+    volumes=None,
+    volume_mounts=None,
 ):
     """
     Create a k8 Job Object
@@ -100,8 +101,11 @@ def kube_create_job_object(
     """
     env_vars = env_vars or {}
     namespace = namespace or "default"
-    command = command or "sleep 60"
+    command = command or "/init/init.sh"
+    args = args or "sleep 60"
     container_name = container_name or "jobcontainer"
+    volumes = volumes or []
+    volume_mounts = volume_mounts or []
     # Body is the object Body
     body = client.V1Job(api_version="batch/v1", kind="Job")
     # Body needs Metadata
@@ -117,62 +121,62 @@ def kube_create_job_object(
     for env_name, env_value in env_vars.items():
         env_list.append(client.V1EnvVar(name=env_name, value=str(env_value)))
 
-    if (resources := extraConfig.resources) is not None:
-        resourcesReq = client.V1ResourceRequirements(**resources)
-        cpu_requests = resources["requests"]["cpu"]
-        mem_requests = resources["requests"]["memory"]
-        cpu_limits = resources["limits"]["cpu"]
-        mem_limits = resources["limits"]["memory"]
-        env_list.append(client.V1EnvVar(name="CPU_REQUESTS", value=str(cpu_requests)))
-        env_list.append(client.V1EnvVar(name="MEM_REQUESTS", value=str(mem_requests)))
-        env_list.append(client.V1EnvVar(name="CPU_LIMITS", value=str(cpu_limits)))
-        env_list.append(client.V1EnvVar(name="MEM_LIMITS", value=str(mem_limits)))
-    else:
-        resourcesReq = None
+    # if (resources := extraConfig.resources) is not None:
+    #     resourcesReq = client.V1ResourceRequirements(**resources)
+    #     cpu_requests = resources["requests"]["cpu"]
+    #     mem_requests = resources["requests"]["memory"]
+    #     cpu_limits = resources["limits"]["cpu"]
+    #     mem_limits = resources["limits"]["memory"]
+    #     env_list.append(client.V1EnvVar(name="CPU_REQUESTS", value=str(cpu_requests)))
+    #     env_list.append(client.V1EnvVar(name="MEM_REQUESTS", value=str(mem_requests)))
+    #     env_list.append(client.V1EnvVar(name="CPU_LIMITS", value=str(cpu_limits)))
+    #     env_list.append(client.V1EnvVar(name="MEM_LIMITS", value=str(mem_limits)))
+    # else:
+    #     resourcesReq = None
 
-    volume_mounts = []
-    for vm in extraConfig.volumeMounts:
-        volume_mounts.append(_make_spec_from_dict(vm, client.V1VolumeMount))
+    volumes_spec = [_make_spec_from_dict(vol, client.V1Volume) for vol in volumes]
+    volume_mounts_spec = [
+        _make_spec_from_dict(vm, client.V1VolumeMount) for vm in volume_mounts
+    ]
 
-    if (security_context := extraConfig.securityContext) is not None:
-        secReq = _make_spec_from_dict(security_context, client.V1SecurityContext)
-    else:
-        secReq = None
+    # if (security_context := extraConfig.securityContext) is not None:
+    #     secReq = _make_spec_from_dict(security_context, client.V1SecurityContext)
+    # else:
+    #     secReq = None
 
     container = client.V1Container(
         name=container_name,
         image=container_image,
-        env=env_list,
+        # env=env_list,
         image_pull_policy="IfNotPresent",
-        args=command.split(),
-        resources=resourcesReq,
-        volume_mounts=volume_mounts,
-        security_context=secReq,
+        command=["/init/init.sh"],
+        args=["sleep 120"],
+        # resources=resourcesReq,
+        volume_mounts=volume_mounts_spec,
+        # security_context=secReq,
     )
 
-    volumes = []
-    for vol in extraConfig.volumes:
-        volumes.append(_make_spec_from_dict(vol, client.V1Volume))
+    # if (pod_security_context := extraConfig.podSecurityContext) is not None:
+    #     secReq = _make_spec_from_dict(pod_security_context, client.V1PodSecurityContext)
+    # else:
+    #     secReq = None
 
-    if (pod_security_context := extraConfig.podSecurityContext) is not None:
-        secReq = _make_spec_from_dict(pod_security_context, client.V1PodSecurityContext)
-    else:
-        secReq = None
+    log.debug(volumes_spec)
 
     template.template.spec = client.V1PodSpec(
         containers=[container],
         restart_policy="Never",
         termination_grace_period_seconds=100,
-        volumes=volumes,
+        volumes=volumes_spec,
         service_account_name=service_account_name,
-        security_context=secReq,
-        node_selector=extraConfig.node_selector,
+        # security_context=secReq,
+        # node_selector=extraConfig.node_selector,
     )
 
     # And finaly we can create our V1JobSpec!
     body.spec = client.V1JobSpec(
-        ttl_seconds_after_finished=300, 
-        template=template.template, 
+        ttl_seconds_after_finished=300,
+        template=template.template,
         backoff_limit=retries,
     )
     return body
@@ -182,10 +186,12 @@ async def kube_create_job(
     name,
     image,
     command=None,
+    args=None,
     namespace=None,
-    extraConfig=None,
     env_vars=None,
     service_account_name=None,
+    volumes=None,
+    volume_mounts=None,
     retries=0,
 ):
     namespace = namespace or "default"
@@ -195,17 +201,19 @@ async def kube_create_job(
         image,
         env_vars=env_vars,
         namespace=namespace,
-        command=command or "sleep 60",
-        extraConfig=extraConfig or {},
+        command=command or "/init/init.sh",
+        args=args or "sleep 60",
         service_account_name=service_account_name,
         retries=retries,
+        volumes=volumes or [],
+        volume_mounts=volume_mounts or [],
     )
 
     config.load_incluster_config()
     async with ApiClient() as api:
         v1 = client.BatchV1Api(api)
         res = await v1.create_namespaced_job(namespace, body, pretty=True)
-    return res
+    return body, res
 
 
 async def kube_delete_job(name, namespace=None):

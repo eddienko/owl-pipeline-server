@@ -249,7 +249,7 @@ class Pipeline:
     async def delete_unresponsive_workers(self):
         now = time.time()
         workers = self.info["scheduler"]["workers"]
-        last_seen = {v['id']: now - v['last_seen'] for v in workers.values()}
+        last_seen = {v["id"]: now - v["last_seen"] for v in workers.values()}
         for k, v in last_seen.items():
             if v > 5 * config.heartbeat:
                 self.logger.warn("Restarting unresponsive worker %s", k)

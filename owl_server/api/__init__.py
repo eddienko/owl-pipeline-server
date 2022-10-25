@@ -180,7 +180,12 @@ async def pipeline_list(
     status: str, listall: bool = False, authentication=Header(None), username=None
 ):
     st = await check_status(status.upper())
-    q = db.Pipeline.select()
+    q = (
+        db.Pipeline.join(db.User)
+        .join(db.PipelineDefinition)
+        .join(db.ContainerImage)
+        .select()
+    )
     if st not in ["ALL"]:
         q = q.where(db.Pipeline.c.status == st)
     if username not in [OWL_USERNAME]:
@@ -188,9 +193,9 @@ async def pipeline_list(
             try:
                 await check_admin(username)
             except HTTPException:
-                q = q.where(db.Pipeline.c.user == username)
+                q = q.where(db.User.c.username == username)
         else:
-            q = q.where(db.Pipeline.c.user == username)
+            q = q.where(db.User.c.username == username)
     q = q.order_by(db.Pipeline.c.id.desc())
     res = await database.fetch_all(q)
     return res
@@ -299,14 +304,14 @@ async def pipeline_update(
     uid: int, pipe: Pipeline, authentication=Header(None), username=None
 ):
     new = await check_status(pipe.status.upper())
-    q = db.Pipeline.select().where(db.Pipeline.c.id == uid)
+    q = db.Pipeline.join(db.User).select().where(db.Pipeline.c.id == uid)
     res = await database.fetch_one(q)
     if not res:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Pipeline {uid} not found",
         )
-    if username not in [OWL_USERNAME, res["user"]]:
+    if username not in [OWL_USERNAME, res["username"]]:
         await check_admin(username)
     update = False
     if (res["status"] in ["TO_CANCEL"]) and (new == "CANCELLED"):
@@ -323,7 +328,7 @@ async def pipeline_update(
         )
         await database.execute(q)
 
-    return {"id": uid, "status": new, "user": res["user"]}
+    return {"id": uid, "status": new, "user": res["username"]}
 
 
 @app.post("/api/admin/command")
