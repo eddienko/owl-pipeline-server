@@ -66,16 +66,17 @@ Storage = sqlalchemy.Table(
     sqlalchemy.Column("s3", sqlalchemy.String(length=80), nullable=False),
 )
 
-# PipelineLogs = sqlalchemy.Table(
-#     "pipeline_logs",
-#     metadata,
-#     sqlalchemy.Column("id", sqlalchemy.Integer, primary_key=True),
-#     sqlalchemy.Column("jobid", sqlalchemy.Integer, nullable=False, index=True),
-#     sqlalchemy.Column("level", sqlalchemy.String(length=16), nullable=False),
-#     sqlalchemy.Column("func_name", sqlalchemy.String(length=80)),
-#     sqlalchemy.Column("message", sqlalchemy.Text),
-#     sqlalchemy.Column("timestamp", sqlalchemy.DateTime, nullable=False),
-# )
+PipelineLogs = sqlalchemy.Table(
+    "darkroom_owl_pipelinelogs",
+    metadata,
+    sqlalchemy.Column("id", sqlalchemy.Integer, primary_key=True),
+    sqlalchemy.Column("name", sqlalchemy.String(length=80)),
+    sqlalchemy.Column("jobid_id", sqlalchemy.Integer, nullable=False, index=True),
+    sqlalchemy.Column("level", sqlalchemy.String(length=16), nullable=False),
+    sqlalchemy.Column("func_name", sqlalchemy.String(length=80)),
+    sqlalchemy.Column("message", sqlalchemy.Text),
+    sqlalchemy.Column("timestamp", sqlalchemy.DateTime, nullable=False),
+)
 
 # ContainerImage = sqlalchemy.Table(
 #     "container_image",

@@ -4,6 +4,7 @@ import ipaddress
 import json
 import os
 import socket
+import sys
 from contextlib import suppress
 from datetime import datetime
 from pathlib import Path
@@ -536,7 +537,6 @@ async def get_storage(name: str, authentication=Header(None), username=None):
         p = Path(*parts[: i + 1])
         q = db.Storage.select().where(db.Storage.c.s3 == f"{p}")
         res = await database.fetch_one(q)
-        print(p, res)
         if res:
             return res
     return {"detail": "Not found"}

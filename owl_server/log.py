@@ -287,7 +287,7 @@ class HTTPHandler(logging.Handler):
     def emit(self, record):
         payload = self.format(record)
         try:
-            self.session.post(self.url, json=json.dumps(payload))
+            self.session.post(self.url, json=payload)
         except (KeyboardInterrupt, SystemExit):
             raise
         except Exception:
