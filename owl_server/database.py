@@ -11,7 +11,7 @@ Pipeline = sqlalchemy.Table(
     sqlalchemy.Column(
         "user_id",
         sqlalchemy.Integer,
-        sqlalchemy.ForeignKey("darkroom_core_user.id"),
+        sqlalchemy.ForeignKey("darkroom_core_user_nopass.id"),
         nullable=False,
     ),
     sqlalchemy.Column(
@@ -54,6 +54,16 @@ ContainerImage = sqlalchemy.Table(
     sqlalchemy.Column("image", sqlalchemy.String(length=80), nullable=False),
     sqlalchemy.Column("tag", sqlalchemy.String(length=80), nullable=False),
     sqlalchemy.Column("image_spec", sqlalchemy.JSON, nullable=False),
+)
+
+Storage = sqlalchemy.Table(
+    "darkroom_core_storage",
+    metadata,
+    sqlalchemy.Column("id", sqlalchemy.Integer, primary_key=True),
+    sqlalchemy.Column("name", sqlalchemy.String(length=80), nullable=False),
+    sqlalchemy.Column("volume", sqlalchemy.JSON, nullable=False),
+    sqlalchemy.Column("volumeMount", sqlalchemy.JSON, nullable=False),
+    sqlalchemy.Column("s3", sqlalchemy.String(length=80), nullable=False),
 )
 
 # PipelineLogs = sqlalchemy.Table(

@@ -395,6 +395,11 @@ class Scheduler:
         path = f"/api/auth/user/get/{username}"
         return await self._make_request(path)
 
+    async def get_storage(self, pathname):
+        pathname = pathname.replace("/", "__")
+        path = f"/api/storage/get/{pathname}"
+        return await self._make_request(path)
+
     async def start_pipeline(self, pipe: Dict[str, Any]):
         """Start a pipeline.
 
@@ -461,6 +466,19 @@ class Scheduler:
 
         volumes += config["user"].get("volumes", [])
         volume_mounts += config["user"].get("volumeMounts", [])
+
+        # TODO: check that user has permissions to access the volumes
+        if "input_path" in pipe_config:
+            st = await self.get_storage(pipe_config["input_path"])
+            if "detail" not in st:
+                volumes.append(st["volume"])
+                volume_mounts.append(st["volumeMount"])
+
+        if "output_path" in pipe_config:
+            st = await self.get_storage(pipe_config["output_path"])
+            if "detail" not in st:
+                volumes.append(st["volume"])
+                volume_mounts.append(st["volumeMount"])
 
         self.logger.debug("Creating job %s with config %s", jobname, pipe)
 

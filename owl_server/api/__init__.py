@@ -6,6 +6,7 @@ import os
 import socket
 from contextlib import suppress
 from datetime import datetime
+from pathlib import Path
 from typing import Any, Dict, Optional
 
 import databases
@@ -304,7 +305,7 @@ async def pipeline_update(
     uid: int, pipe: Pipeline, authentication=Header(None), username=None
 ):
     new = await check_status(pipe.status.upper())
-    q = db.Pipeline.join(db.User).select().where(db.Pipeline.c.id == uid)
+    q = db.Pipeline.join(db.UserOnly).select().where(db.Pipeline.c.id == uid)
     res = await database.fetch_one(q)
     if not res:
         raise HTTPException(
@@ -525,6 +526,20 @@ async def get_pdef(name: str, authentication=Header(None), username=None):
     q = db.PipelineDefinition.select().where(db.PipelineDefinition.c.name == name)
     res = await database.fetch_one(q)
     return res
+
+
+@app.get("/api/storage/get/{name}")
+@authenticate()
+async def get_storage(name: str, authentication=Header(None), username=None):
+    parts = Path(name.replace("__", "/")).parts
+    for i in range(len(parts)):
+        p = Path(*parts[: i + 1])
+        q = db.Storage.select().where(db.Storage.c.s3 == f"{p}")
+        res = await database.fetch_one(q)
+        print(p, res)
+        if res:
+            return res
+    return {"detail": "Not found"}
 
 
 @app.get("/")
