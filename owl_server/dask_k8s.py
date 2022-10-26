@@ -85,12 +85,13 @@ def save_config(config):
 
 def update_dask_kubernetes():
     dc = dask_config["kubernetes"]
-    vol, volm = get_volumes()
+    vol1, volm1 = get_volumes("config_map")
+    vol2, volm2 = get_volumes("nfs")
 
     for section in ["worker-template", "scheduler-template"]:
         dc[section]["spec"]["containers"][0]["env"] += get_envvars()
-        dc[section]["spec"]["containers"][0]["volumeMounts"] = volm
-        dc[section]["spec"]["volumes"] = vol
+        dc[section]["spec"]["containers"][0]["volumeMounts"] = volm1 + volm2
+        dc[section]["spec"]["volumes"] = vol1 + vol2
         dc[section]["spec"]["containers"][0]["command"] = get_command()
         dc[section]["spec"]["containers"][0]["image"] = get_image()
 

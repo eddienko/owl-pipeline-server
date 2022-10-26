@@ -453,11 +453,14 @@ class Scheduler:
         # Reload global config replacing USER
         # This works because we run in one thread and we do not run await until this is used
         # Needed to replace in the config
-        # os.environ.update({"JOB_USER": user})
-        # refresh()
+        os.environ.update({"JOB_USER": user})
+        refresh()
 
         volumes = pipe["image_spec"].get("volumes", [])
         volume_mounts = pipe["image_spec"].get("volumeMounts", [])
+
+        volumes += config["user"].get("volumes", [])
+        volume_mounts += config["user"].get("volumeMounts", [])
 
         self.logger.debug("Creating job %s with config %s", jobname, pipe)
 
