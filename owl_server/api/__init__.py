@@ -226,8 +226,12 @@ async def logger(payload: str = Body(...), request: Request = None):
     if payload["topic"] not in ["PIPELINE"]:
         return {}
 
+    level = payload.get("levelname"]
+    if level not in ["INFO", "WARNING", "ERROR", "CRITICAL"]:
+            return {}
+
     q = db.PipelineLogs.insert().values(
-        jobid=int(payload["jobid"]),
+        jobid_id=int(payload["jobid"]),
         timestamp=dateutil.parser.parse(payload["asctime"]),
         func_name=payload["funcName"],
         message=payload["message"],
