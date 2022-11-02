@@ -211,7 +211,7 @@ async def logger(payload: str = Body(...), request: Request = None):
     if payload["topic"] not in ["PIPELINE"]:
         return {}
 
-    level = payload.get("levelname"]
+    level = payload.get("levelname")
     if level not in ["INFO", "WARNING", "ERROR", "CRITICAL"]:
             return {}
 
