@@ -11,13 +11,13 @@ Pipeline = sqlalchemy.Table(
     sqlalchemy.Column(
         "user_id",
         sqlalchemy.Integer,
-        sqlalchemy.ForeignKey("darkroom_core_user_nopass.id"),
+        sqlalchemy.ForeignKey("auth_user.id"),
         nullable=False,
     ),
     sqlalchemy.Column(
         "pdef_id",
         sqlalchemy.Integer,
-        sqlalchemy.ForeignKey("darkroom_core_pipedef.id"),
+        sqlalchemy.ForeignKey("darkroom_owl_pipedef.id"),
         nullable=False,
     ),
     sqlalchemy.Column(
@@ -30,7 +30,7 @@ Pipeline = sqlalchemy.Table(
 )
 
 PipelineDefinition = sqlalchemy.Table(
-    "darkroom_core_pipedef",
+    "darkroom_owl_pipedef",
     metadata,
     sqlalchemy.Column("id", sqlalchemy.Integer, primary_key=True),
     sqlalchemy.Column("env", sqlalchemy.JSON, nullable=False),
@@ -40,7 +40,7 @@ PipelineDefinition = sqlalchemy.Table(
     sqlalchemy.Column(
         "docker_image_id",
         sqlalchemy.Integer,
-        sqlalchemy.ForeignKey("darkroom_core_dockerimage.id"),
+        sqlalchemy.ForeignKey("darkroom_owl_dockerimage.id"),
         nullable=False,
     ),
     # sqlalchemy.Column("active", sqlalchemy.Boolean, default=True),
@@ -48,7 +48,7 @@ PipelineDefinition = sqlalchemy.Table(
 )
 
 ContainerImage = sqlalchemy.Table(
-    "darkroom_core_dockerimage",
+    "darkroom_owl_dockerimage",
     metadata,
     sqlalchemy.Column("id", sqlalchemy.Integer, primary_key=True),
     sqlalchemy.Column("image", sqlalchemy.String(length=80), nullable=False),
@@ -57,7 +57,7 @@ ContainerImage = sqlalchemy.Table(
 )
 
 Storage = sqlalchemy.Table(
-    "darkroom_core_storage",
+    "darkroom_database_storage",
     metadata,
     sqlalchemy.Column("id", sqlalchemy.Integer, primary_key=True),
     sqlalchemy.Column("name", sqlalchemy.String(length=80), nullable=False),
@@ -102,7 +102,7 @@ Token = sqlalchemy.Table(
 )
 
 User = sqlalchemy.Table(
-    "darkroom_core_user",
+    "auth_user",
     metadata,
     sqlalchemy.Column("id", sqlalchemy.Integer, primary_key=True),
     sqlalchemy.Column("username", sqlalchemy.String(length=32), unique=True),
@@ -110,7 +110,7 @@ User = sqlalchemy.Table(
 )
 
 UserOnly = sqlalchemy.Table(
-    "darkroom_core_user_nopass",
+    "auth_user",
     metadata,
     sqlalchemy.Column("id", sqlalchemy.Integer, primary_key=True),
     sqlalchemy.Column("username", sqlalchemy.String(length=32), unique=True),
