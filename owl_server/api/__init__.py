@@ -221,7 +221,7 @@ async def logger(payload: str = Body(...), request: Request = None):
         func_name=payload["funcName"],
         message=payload["message"],
         level=payload["levelname"],
-        name=payload["name"],
+#        name=payload["name"],
     )
     await database.execute(q)
 
