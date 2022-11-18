@@ -539,7 +539,7 @@ async def get_storage(name: str, authentication=Header(None), username=None):
     parts = Path(name.replace("__", "/")).parts
     for i in range(len(parts)):
         p = Path(*parts[: i + 1])
-        q = db.Storage.select().where(db.Storage.c.s3 == f"{p}")
+        q = db.Storage.select().where(db.Storage.c.mountPath == f"{p}")
         res = await database.fetch_one(q)
         if res:
             return res
