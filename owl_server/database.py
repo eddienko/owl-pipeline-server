@@ -61,8 +61,7 @@ Storage = sqlalchemy.Table(
     metadata,
     sqlalchemy.Column("id", sqlalchemy.Integer, primary_key=True),
     sqlalchemy.Column("name", sqlalchemy.String(length=80), nullable=False),
-    sqlalchemy.Column("volume", sqlalchemy.JSON, nullable=False),
-    sqlalchemy.Column("volumeMount", sqlalchemy.JSON, nullable=False),
+    sqlalchemy.Column("spec", sqlalchemy.JSON, nullable=False),
     sqlalchemy.Column("mountPath", sqlalchemy.String(length=80), nullable=False),
 )
 
