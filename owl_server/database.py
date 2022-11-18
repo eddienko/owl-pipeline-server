@@ -57,13 +57,13 @@ ContainerImage = sqlalchemy.Table(
 )
 
 Storage = sqlalchemy.Table(
-    "darkroom_database_storage",
+    "darkroom_database_datastorage",
     metadata,
     sqlalchemy.Column("id", sqlalchemy.Integer, primary_key=True),
     sqlalchemy.Column("name", sqlalchemy.String(length=80), nullable=False),
     sqlalchemy.Column("volume", sqlalchemy.JSON, nullable=False),
     sqlalchemy.Column("volumeMount", sqlalchemy.JSON, nullable=False),
-    sqlalchemy.Column("s3", sqlalchemy.String(length=80), nullable=False),
+    sqlalchemy.Column("mountPath", sqlalchemy.String(length=80), nullable=False),
 )
 
 PipelineLogs = sqlalchemy.Table(
