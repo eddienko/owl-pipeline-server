@@ -9,7 +9,7 @@ Pipeline = sqlalchemy.Table(
     sqlalchemy.Column("config", sqlalchemy.JSON, nullable=False),
     sqlalchemy.Column("heartbeat", sqlalchemy.JSON, nullable=True),
     sqlalchemy.Column(
-        "user_id",
+        "owner_id",
         sqlalchemy.Integer,
         sqlalchemy.ForeignKey("auth_user.id"),
         nullable=False,
