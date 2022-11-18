@@ -23,7 +23,7 @@ Pipeline = sqlalchemy.Table(
     sqlalchemy.Column(
         "status", sqlalchemy.String(length=16), default="PENDING", nullable=False
     ),
-    sqlalchemy.Column("created_at", sqlalchemy.DateTime, nullable=False),
+    sqlalchemy.Column("created_on", sqlalchemy.DateTime, nullable=False),
     sqlalchemy.Column("started_at", sqlalchemy.DateTime, nullable=True),
     sqlalchemy.Column("finished_at", sqlalchemy.DateTime, nullable=True),
     sqlalchemy.Column("elapsed", sqlalchemy.Float, nullable=True),
