@@ -438,7 +438,7 @@ class Scheduler:
             "LOGLEVEL": config.loglevel,
             "PIPEDEF": json.dumps(pipe_config),
             "DOCKER_IMAGE": docker_image,
-            "EXTRA_PIP_PACKAGES": pipe["env"].get("EXTRA_PIP_PACKAGES", ""),
+            "EXTRA_PIP_PACKAGES": pipe["package_name"],
             "OMP_NUM_THREADS": "1",
             "OPENBLAS_NUM_THREADS": "1",
             "MKL_NUM_THREADS": "1",

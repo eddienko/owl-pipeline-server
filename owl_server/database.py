@@ -37,6 +37,8 @@ PipelineDefinition = sqlalchemy.Table(
     sqlalchemy.Column(
         "name", sqlalchemy.String(length=32), nullable=False, unique=True
     ),
+    sqlalchemy.Column("pipeline_name", sqlalchemy.String(length=32)),
+    sqlalchemy.Column("package_name", sqlalchemy.String(length=32)),
     sqlalchemy.Column(
         "docker_image_id",
         sqlalchemy.Integer,
