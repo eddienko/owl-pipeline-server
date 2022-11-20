@@ -149,7 +149,7 @@ def kube_create_job_object(
         image=container_image,
         env=env_list,
         image_pull_policy="IfNotPresent",
-        command=command,
+        command=command.split(),
         args=args,
         # resources=resourcesReq,
         volume_mounts=volume_mounts_spec,
