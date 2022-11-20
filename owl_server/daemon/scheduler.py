@@ -490,7 +490,7 @@ class Scheduler:
             jobname,
             docker_image,
             args=args.split(),
-            command=pipe["image_spec"]["command"],
+            # command=pipe["image_spec"]["command"],
             namespace=self.namespace,
             env_vars=env_vars,
             service_account_name="owl",
