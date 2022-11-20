@@ -13,6 +13,7 @@ import zmq
 import zmq.asyncio
 from aiohttp.client_exceptions import ClientConnectorError
 from async_timeout import timeout
+
 from owl_server import __version__, k8s
 from owl_server.config import config, refresh
 
@@ -484,6 +485,7 @@ class Scheduler:
 
         args = "owl-server pipeline"
 
+        print("************", pipe)
         body, status = await k8s.kube_create_job(
             jobname,
             docker_image,
