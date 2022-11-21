@@ -13,9 +13,10 @@ from dask.config import config as dask_config
 from dask_kubernetes import KubeCluster
 from distributed import Client
 from distributed.core import rpc
+from voluptuous import Invalid, MultipleInvalid
+
 from owl_server import pipelines
 from owl_server.config import config
-from voluptuous import Invalid, MultipleInvalid
 
 from ..dask_k8s import update_dask_kubernetes
 from ..schema import schema_pipeline
