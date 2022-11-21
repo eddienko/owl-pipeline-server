@@ -96,5 +96,5 @@ def update_dask_kubernetes():
         dc[section]["spec"]["containers"][0]["image"] = get_image()
 
     print("*******", dc)
-    # dc["worker-template-path"] = f"{home}/.config/dask/kubernetes.yaml"
-    # save_config(dc)
+    dc["worker-template-path"] = f"{home}/.config/dask/kubernetes.yaml"
+    save_config(dc)
