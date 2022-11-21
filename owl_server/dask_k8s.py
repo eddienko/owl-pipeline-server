@@ -95,6 +95,9 @@ def update_dask_kubernetes():
         dc[section]["spec"]["containers"][0]["command"] = get_command()
         dc[section]["spec"]["containers"][0]["image"] = get_image()
 
+    # Kubernetes 1.25+
+    dc["scheduler-pdb-template"]["apiVersion"] = "policy/v1"
+
     print("*******", dc)
     dc["worker-template-path"] = f"{home}/.config/dask/kubernetes.yaml"
     save_config(dc)
