@@ -87,6 +87,7 @@ def update_dask_kubernetes():
     dc = dask_config["kubernetes"]
     vol1, volm1 = get_volumes("config_map")
     vol2, volm2 = get_volumes("nfs")
+    print(dc)
 
     for section in ["worker-template", "scheduler-template"]:
         dc[section]["spec"]["containers"][0]["env"] += get_envvars()
