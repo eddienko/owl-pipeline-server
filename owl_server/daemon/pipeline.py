@@ -141,7 +141,7 @@ class Pipeline:
             "dask-worker",
             "--nthreads",
             f"{nthreads}",
-            "--nprocs",
+            "--nworkers",
             "1",
             "--memory-limit",
             f"{memory}GB",
