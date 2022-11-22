@@ -473,14 +473,14 @@ class Scheduler:
             st = await self.get_storage(pipe_config["input_path"])
             print("*****", st)
             if "detail" not in st:
-                volumes.append(st["volume"])
-                volume_mounts.append(st["volumeMount"])
+                volumes.append(st["spec"]["volume"])
+                volume_mounts.append(st["spec"]["volumeMount"])
 
         if "output_path" in pipe_config:
             st = await self.get_storage(pipe_config["output_path"])
             if "detail" not in st:
-                volumes.append(st["volume"])
-                volume_mounts.append(st["volumeMount"])
+                volumes.append(st["spec"]["volume"])
+                volume_mounts.append(st["spec"]["volumeMount"])
 
         self.logger.debug("Creating job %s with config %s", jobname, pipe)
 
