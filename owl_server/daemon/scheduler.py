@@ -471,7 +471,7 @@ class Scheduler:
         # TODO: check that user has permissions to access the volumes
         if "input_path" in pipe_config:
             st = await self.get_storage(pipe_config["input_path"])
-            print("*****", st)
+            print("********", st)
             if "detail" not in st:
                 volumes.append(st["spec"]["volume"])
                 volume_mounts.append(st["spec"]["volumeMount"])
