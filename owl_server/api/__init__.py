@@ -16,8 +16,9 @@ import zmq
 import zmq.asyncio
 from fastapi import Body, FastAPI, Header, HTTPException, Request, status
 from fastapi.responses import StreamingResponse
-from owl_server.config import config
 from pydantic import BaseModel
+
+from owl_server.config import config
 
 from .. import database as db
 from ..crypto import PBKDF2PasswordHasher, get_random_string
@@ -542,6 +543,14 @@ async def get_storage(name: str, authentication=Header(None), username=None):
         q = db.Storage.select().where(db.Storage.c.mountPath == f"{p}")
         res = await database.fetch_one(q)
         if res:
+            relpath = Path(name).relative_to(res["mountPath"])
+            res["spec"]["volumeMount"]["mountPath"] = str(
+                Path(res["spec"]["volumeMount"]["mountPath"]) / relpath
+            )
+            if "nfs" in res["spec"]["volume"]:
+                res["spec"]["volume"]["nfs"]["path"] = str(
+                    Path(res["spec"]["volume"]["nfs"]["path"]) / relpath
+                )
             return res
     return {"detail": "Not found"}
 
