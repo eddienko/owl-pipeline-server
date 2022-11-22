@@ -537,7 +537,8 @@ async def get_pdef(name: str, authentication=Header(None), username=None):
 @app.get("/api/storage/get/{name}")
 @authenticate()
 async def get_storage(name: str, authentication=Header(None), username=None):
-    parts = Path(name.replace("__", "/")).parts
+    name = name.replace("__", "/")
+    parts = Path(name).parts
     for i in range(len(parts)):
         p = Path(*parts[: i + 1])
         q = db.Storage.select().where(db.Storage.c.mountPath == f"{p}")
