@@ -482,7 +482,7 @@ class Scheduler:
                 volumes.append(st["spec"]["volume"])
                 volume_mounts.append(st["spec"]["volumeMount"])
 
-        self.logger.debug("Creating job %s with config %s", jobname, pipe)
+        # self.logger.debug("Creating job %s with config %s", jobname, pipe)
 
         args = "owl-server pipeline"
 

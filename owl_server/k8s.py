@@ -161,7 +161,7 @@ def kube_create_job_object(
     # else:
     #     secReq = None
 
-    log.debug(volumes_spec)
+    # log.debug(volumes_spec)
 
     template.template.spec = client.V1PodSpec(
         containers=[container],
