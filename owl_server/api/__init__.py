@@ -544,15 +544,19 @@ async def get_storage(name: str, authentication=Header(None), username=None):
         q = db.Storage.select().where(db.Storage.c.mountPath == f"{p}")
         res = await database.fetch_one(q)
         if res:
+            output = {"spec": res["spec"]}
+            print(output)
             relpath = Path(name).relative_to(res["mountPath"])
-            res["spec"]["volumeMount"]["mountPath"] = str(
-                Path(res["spec"]["volumeMount"]["mountPath"]) / relpath
+            print(relpath)
+            output["spec"]["volumeMount"]["mountPath"] = str(
+                Path(output["spec"]["volumeMount"]["mountPath"]) / relpath
             )
-            if "nfs" in res["spec"]["volume"]:
-                res["spec"]["volume"]["nfs"]["path"] = str(
-                    Path(res["spec"]["volume"]["nfs"]["path"]) / relpath
+            if "nfs" in output["spec"]["volume"]:
+                output["spec"]["volume"]["nfs"]["path"] = str(
+                    Path(output["spec"]["volume"]["nfs"]["path"]) / relpath
                 )
-            return res
+            print(output)
+            return output
     return {"detail": "Not found"}
 
 
