@@ -207,7 +207,16 @@ class Scheduler:
             with maxpipe.open() as fh:
                 self._max_pipe = int(fh.read()) or MAX_PIPELINES
 
-        self.logger.debug("Checking for pipelines")
+        self.logger.debug("Checking for running pipelines")
+        root = "/api/pipeline/list/running"
+        pipelines = await self._make_request(root)
+
+        for pipe in pipelines:
+            if pipe["id"] in self.pipelines:
+                continue
+            await self.add_pipeline(pipe)
+
+        self.logger.debug("Checking for pending pipelines")
         root = "/api/pipeline/list/pending"
         pipelines = await self._make_request(root)
 
@@ -305,11 +314,8 @@ class Scheduler:
         # is restarted. Save the status to a file and load it again.
         self.logger.debug("Stopping scheduler")
         if self.is_started:
-            for uid in list(self.pipelines):
-                await self.stop_pipeline(uid, "PENDING")
-            # self.logger.info("Saving pipelines status")
-            # with open("/var/run/owl/pipelines.pkl", "w") as fh:
-            #     pickle.dump(self.pipelines, fh)
+            # for uid in list(self.pipelines):
+            #     await self.stop_pipeline(uid, "PENDING")
 
             for task in self._tasks:
                 task.cancel()
@@ -401,6 +407,28 @@ class Scheduler:
         path = f"/api/storage/get/{pathname}"
         return await self._make_request(path)
 
+    async def add_pipeline(self, pipe: Dict[str, Any]):
+        uid = int(pipe["id"])
+        # user = pipe["username"]
+        pipe_config = pipe["config"]
+        jobname = f"pipeline-{uid}"
+        status = "RUNNING"
+        heartbeat = {"status": status}
+
+        self.pipelines[uid] = {
+            "last": time.monotonic(),
+            "heartbeat": heartbeat,
+            # "userinfo": userinfo[0],
+            "job": status,
+            "name": jobname,
+            "uid": uid,
+            "pdef": pipe_config,
+        }
+
+        self._tasks.append(asyncio.create_task(self.heartbeat_pipeline(uid)))
+
+        await asyncio.sleep(0)
+
     async def start_pipeline(self, pipe: Dict[str, Any]):
         """Start a pipeline.
 
@@ -447,7 +475,8 @@ class Scheduler:
             "NUMEXPR_MAX_THREADS": "1",
             "BLOSC_NOLOCK": "1",
             "BLOSC_NTHREADS": "1",
-            "PYTHON_VIRTUALENV": python.get("virtualenv", "") or "default",
+            "PYTHON_VIRTUALENV": python.get("virtualenv", "")
+            or pipe_config.get("name", "default").replace("-", "_"),
             "RESET_VIRTUALENV": python.get("reset_virtualenv", ""),
         }
 
