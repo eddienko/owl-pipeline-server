@@ -531,7 +531,7 @@ class Scheduler:
 
         self.logger.info(body)
 
-        heartbeat = {"status": "STARTING"}
+        heartbeat = {"status": "RUNNING"}
 
         self.pipelines[uid] = {
             "last": time.monotonic(),
@@ -725,7 +725,7 @@ class Scheduler:
             return
 
         with suppress(KeyError):
-            if status not in ["STARTING", "PENDING"]:
+            if status not in ["PENDING"]:
                 self.pipe_metrics.pop(uid)
 
     async def get_pipedef(self, name: str):

@@ -59,7 +59,7 @@ class Pipeline:
         self.info = {"started": time.time(), "version": ""}
         self._tasks = []
         self.running = False
-        self.status = "STARTING"
+        self.status = "RUNNING"
         self._watch = time.monotonic()
 
         self.loop = asyncio.get_event_loop()
@@ -86,6 +86,8 @@ class Pipeline:
         self.logger.info("Starting pipeline ID %s with %s", self.uid, self.pdef)
 
         await self.start_dask_cluster()
+        self.running = True
+        self.status = "RUNNING"
 
         func = getattr(pipelines, self.name)
         self.logger.info(f"Running {func!r} with {self.pdef}")
@@ -95,9 +97,6 @@ class Pipeline:
         self.proc.add_done_callback(self.pipeline_done)
         self._tasks.append(self.proc)
         # self._tasks.append(asyncio.ensure_future(self.get_scheduler_info()))
-
-        self.status = "RUNNING"
-        self.running = True
 
     async def run(self):
         while self.running:
