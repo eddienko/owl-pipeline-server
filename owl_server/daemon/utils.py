@@ -1,44 +1,6 @@
 import functools
 import os
 import subprocess
-from email.message import EmailMessage
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
-from string import Template
-
-import aiosmtplib
-
-email_txt = """
-Your pipeline with ID {jobid} has completed with status: {status}.
-
-If the pipeline returns some result, please find it below.
-
-{result}
-
-You can obtain the full pipeline log output with the command
-
-owl job logs {jobid}
-"""
-
-email_html_old = """<html><body>
-<p>Your pipeline with ID {jobid} has completed with status: <b>{status}</b>.</p>
-
-<p>If the pipeline returns some result, please find it below.</p>
-
-<pre>
-{result}
-</pre>
-
-<p>You can obtain the full pipeline log output with the command:</p>
-
-<pre>
-owl job logs {jobid}
-</pre>
-</body></html>
-"""
-
-this_dir = os.path.dirname(os.path.abspath(__file__))
-email_html = Template(open(f"{this_dir}/email_template.html", "r").read())
 
 
 def safe_loop():
@@ -104,55 +66,3 @@ def slurm_configure(info, **kwargs):
         subprocess.run("sudo slurmctld".split())
     else:
         subprocess.run("sudo slurmd".split())
-
-
-async def send_email(config, pipeline):
-    if not config["enabled"]:
-        return
-
-    try:
-        userinfo = pipeline["userinfo"]
-        to_address = userinfo["email"]
-    except Exception:
-        return
-
-    if not to_address:
-        return
-
-    jobid = pipeline["uid"]
-    status = pipeline["status"].lower()
-    try:
-        elapsed = int(pipeline["heartbeat"]["elapsed"])
-    except KeyError:
-        elapsed = 0
-    username = userinfo["username"]
-    name = pipeline["pdef"]["name"]
-
-    try:
-        result = pipeline["heartbeat"]["result"]
-    except KeyError:
-        result = ""
-
-    message = MIMEMultipart("alternative")
-    message["From"] = config.get("from_address", "owl@localhost")
-    message["To"] = to_address
-    message["Subject"] = f"Pipeline {jobid}: {status}"
-    message_txt = MIMEText(
-        email_txt.format(jobid=jobid, status=status, result=result), "plain", "utf-8"
-    )
-    message_html = MIMEText(
-        email_html.substitute(
-            jobid=jobid,
-            status=status,
-            result=result,
-            elapsed=elapsed,
-            username=username,
-            name=name,
-        ),
-        "html",
-        "utf-8",
-    )
-    message.attach(message_txt)
-    message.attach(message_html)
-
-    await aiosmtplib.send(message, hostname=config["host"], port=config["port"])

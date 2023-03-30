@@ -18,7 +18,7 @@ from owl_server import __version__, k8s
 from owl_server.config import config, refresh
 
 from ..schema import schema_pipeline
-from .utils import safe_loop, send_email
+from .utils import safe_loop
 
 MAX_PIPELINES = 99
 
@@ -565,7 +565,6 @@ class Scheduler:
             await self._tear_pipeline(uid)
             pipeline = self.pipelines.pop(uid)
             pipeline["status"] = status
-            await send_email(self._smtp, pipeline)
 
     async def _tear_pipeline(self, uid: int):
         if uid not in self.pipelines:
