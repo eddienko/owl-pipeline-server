@@ -3,7 +3,7 @@ import sqlalchemy
 metadata = sqlalchemy.MetaData()
 
 Pipeline = sqlalchemy.Table(
-    "darkroom_owl_pipeline",
+    "owl_pipeline",
     metadata,
     sqlalchemy.Column("id", sqlalchemy.Integer, primary_key=True),
     sqlalchemy.Column("config", sqlalchemy.JSON, nullable=False),
@@ -17,7 +17,7 @@ Pipeline = sqlalchemy.Table(
     sqlalchemy.Column(
         "pdef_id",
         sqlalchemy.Integer,
-        sqlalchemy.ForeignKey("darkroom_owl_pipedef.id"),
+        sqlalchemy.ForeignKey("owl_pipelinedefinition.id"),
         nullable=False,
     ),
     sqlalchemy.Column(
@@ -30,7 +30,7 @@ Pipeline = sqlalchemy.Table(
 )
 
 PipelineDefinition = sqlalchemy.Table(
-    "darkroom_owl_pipedef",
+    "owl_pipelinedefinition",
     metadata,
     sqlalchemy.Column("id", sqlalchemy.Integer, primary_key=True),
     sqlalchemy.Column("env", sqlalchemy.JSON, nullable=False),
@@ -42,7 +42,7 @@ PipelineDefinition = sqlalchemy.Table(
     sqlalchemy.Column(
         "docker_image_id",
         sqlalchemy.Integer,
-        sqlalchemy.ForeignKey("darkroom_owl_dockerimage.id"),
+        sqlalchemy.ForeignKey("owl_pipelineimage.id"),
         nullable=False,
     ),
     # sqlalchemy.Column("active", sqlalchemy.Boolean, default=True),
@@ -50,7 +50,7 @@ PipelineDefinition = sqlalchemy.Table(
 )
 
 ContainerImage = sqlalchemy.Table(
-    "darkroom_owl_dockerimage",
+    "owl_pipelineimage",
     metadata,
     sqlalchemy.Column("id", sqlalchemy.Integer, primary_key=True),
     sqlalchemy.Column("image", sqlalchemy.String(length=80), nullable=False),
@@ -59,7 +59,7 @@ ContainerImage = sqlalchemy.Table(
 )
 
 Storage = sqlalchemy.Table(
-    "darkroom_database_datastorage",
+    "s3storage_storage",
     metadata,
     sqlalchemy.Column("id", sqlalchemy.Integer, primary_key=True),
     sqlalchemy.Column("name", sqlalchemy.String(length=80), nullable=False),
@@ -68,7 +68,7 @@ Storage = sqlalchemy.Table(
 )
 
 PipelineLogs = sqlalchemy.Table(
-    "darkroom_owl_pipelinelogs",
+    "owl_pipelinelogs",
     metadata,
     sqlalchemy.Column("id", sqlalchemy.Integer, primary_key=True),
     sqlalchemy.Column("name", sqlalchemy.String(length=80)),
@@ -89,13 +89,13 @@ PipelineLogs = sqlalchemy.Table(
 # )
 
 Token = sqlalchemy.Table(
-    "darkroom_owl_token",
+    "owl_pipelinetoken",
     metadata,
     sqlalchemy.Column("id", sqlalchemy.Integer, primary_key=True),
     sqlalchemy.Column(
         "user_id",
         sqlalchemy.Integer,
-        sqlalchemy.ForeignKey("darkroom_core_user.id"),
+        sqlalchemy.ForeignKey("auth_user.id"),
         nullable=False,
         unique=True,
     ),
