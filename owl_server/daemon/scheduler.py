@@ -515,7 +515,7 @@ class Scheduler:
 
         args = "owl-server pipeline"
 
-        print("************", pipe)
+        # print("************", pipe)
         body, status = await k8s.kube_create_job(
             jobname,
             docker_image,

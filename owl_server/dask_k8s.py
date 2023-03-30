@@ -98,6 +98,5 @@ def update_dask_kubernetes():
     # Kubernetes 1.25+
     dc["scheduler-pdb-template"]["apiVersion"] = "policy/v1"
 
-    print("*******", dc)
     # dc["worker-template-path"] = f"{home}/.config/dask/kubernetes.yaml"
     # save_config(dc)

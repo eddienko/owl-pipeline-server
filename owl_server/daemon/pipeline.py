@@ -131,6 +131,7 @@ class Pipeline:
             await self.setup_slurm_cluster()
 
     def dask_config(self):
+        self.logger.info("Configuring Dask cluster")
         update_dask_kubernetes()
         resources = self.pdef["resources"]
         worker = dask_config["kubernetes"]["worker-template"]["spec"]["containers"][0]
@@ -215,6 +216,9 @@ class Pipeline:
         All tasks started by `start` are now cancelled.
         """
         self.logger.info("Stopping pipeline ID %s", self.uid)
+        self.cluster.adapt(minimum=0, maximum=0)
+        while len(self.cluster.scheduler_info["workers"]) != 0:
+            await asyncio.sleep(1)
         if self.running:
             with suppress(Exception):
                 await self.cluster.close()
